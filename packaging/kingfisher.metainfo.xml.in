@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>@APP_ID@</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Kingfisher</name>
+  <summary>Extract text from any part of your screen, offline</summary>
+  <developer id="io.github.geojoseph19">
+    <name>Geo Joseph</name>
+  </developer>
+  <description>
+    <p>
+      Kingfisher reads the text in anything you can see: a video, a photo, a scanned PDF, an error message.
+      Press a shortcut, select the text, and it is on your clipboard, ready to paste.
+    </p>
+    <p>Everything happens on your computer, so what you capture stays private.</p>
+    <ul>
+      <li>Precise area selection on any monitor</li>
+      <li>Read the whole screen, image files and images on the clipboard</li>
+      <li>QR codes and barcodes</li>
+      <li>Open links, email addresses and phone numbers with one click</li>
+      <li>Keep the original layout or join wrapped lines into paragraphs</li>
+      <li>History of recent results, saved as text only</li>
+      <li>Keyboard shortcut and top-bar icon</li>
+      <li>More than 120 languages</li>
+      <li>Light and dark styles</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">@APP_ID@.desktop</launchable>
+  <url type="homepage">https://github.com/geojoseph19/kingfisher</url>
+  <url type="bugtracker">https://github.com/geojoseph19/kingfisher/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The start page</caption>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/start-light.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Text, links and a QR code read from a capture</caption>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/result.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Reading a capture in dark mode</caption>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/reading-dark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The start page in dark mode</caption>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/start-dark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>History of recent results</caption>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/history.png</image>
+    </screenshot>
+  </screenshots>
+  <branding>
+    <color type="primary" scheme_preference="light">#cfe3fb</color>
+    <color type="primary" scheme_preference="dark">#0f2242</color>
+  </branding>
+  <provides>
+    <binary>kingfisher</binary>
+  </provides>
+  <categories>
+    <category>Graphics</category>
+    <category>Scanning</category>
+    <category>OCR</category>
+  </categories>
+  <keywords>
+    <keyword>OCR</keyword>
+    <keyword>text</keyword>
+    <keyword>screenshot</keyword>
+    <keyword>extract</keyword>
+  </keywords>
+  <requires>
+    <display_length compare="ge">768</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@VERSION@" date="@DATE@">
+      <description>
+        <p>First public release.</p>
+        <ul>
+          <li>Screenshot-style area selection, whole-screen capture, image files and clipboard images</li>
+          <li>Offline text recognition with Tesseract, QR codes and barcodes</li>
+          <li>One-click actions for links, email addresses and phone numbers</li>
+          <li>One-click language packs, a private history, light and dark styles</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

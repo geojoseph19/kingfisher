@@ -1,0 +1,383 @@
+/* SPDX-FileCopyrightText: 2026 Geo Joseph
+   SPDX-License-Identifier: GPL-3.0-or-later */
+
+/* Kingfisher stylesheet.
+   The app follows libadwaita and only adds its own colours: kingfisher blue
+   as the accent, gold for codes and the scan line, and a cool off-white.
+   Dark-mode values live in style-dark.css and override these names. */
+
+/* ---- palette ---- */
+@define-color kf_blue #1b6fe0;
+@define-color kf_gold #f5a623;
+@define-color kf_orange #e8590c;
+@define-color kf_ink #0b1f3a;
+
+@define-color kf_tint #edf2f9;
+@define-color kf_text_soft #5c6878;
+@define-color kf_border rgba(20, 50, 100, 0.10);
+@define-color kf_shadow rgba(10, 35, 75, 0.07);
+
+@define-color accent_bg_color @kf_blue;
+@define-color accent_color #1560c8;
+@define-color accent_fg_color #ffffff;
+@define-color window_bg_color #f6f8fb;
+@define-color view_bg_color #ffffff;
+@define-color headerbar_bg_color #f6f8fb;
+@define-color headerbar_backdrop_color #f6f8fb;
+@define-color card_bg_color #ffffff;
+@define-color popover_bg_color #ffffff;
+@define-color dialog_bg_color #f6f8fb;
+
+/* ---- motion: short, quiet, and only where it explains something ---- */
+@keyframes kf-enter   { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes kf-enter-b { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.kf-enter   { animation: kf-enter 300ms cubic-bezier(0.25, 0.8, 0.25, 1) both; }
+.kf-enter-b { animation: kf-enter-b 300ms cubic-bezier(0.25, 0.8, 0.25, 1) both; }
+.kf-enter.later, .kf-enter-b.later { animation-delay: 70ms; }
+
+@keyframes kf-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kf-fade-b { from { opacity: 0; } to { opacity: 1; } }
+.kf-fade   { animation: kf-fade 240ms ease-out both; }
+.kf-fade-b { animation: kf-fade-b 240ms ease-out both; }
+
+@keyframes kf-tick   { from { opacity: 0.3; transform: scale(1.12); } to { opacity: 1; transform: none; } }
+@keyframes kf-tick-b { from { opacity: 0.3; transform: scale(1.12); } to { opacity: 1; transform: none; } }
+
+headerbar { box-shadow: inset 0 -1px @kf_border; }
+
+.keycap {
+  font-size: 0.85em;
+  padding: 1px 6px;
+  min-width: 10px;
+  border-radius: 5px;
+  background-color: @card_bg_color;
+  box-shadow: inset 0 0 0 1px @kf_border, inset 0 -2px @kf_border;
+  color: @window_fg_color;
+}
+
+/* ---- buttons with a little life ----
+   The primary button and the glass button (Cancel on the reading page) move
+   the same way: hover lifts them 1 px onto a deeper shadow, press settles
+   them back and they give slightly. Colour changes stay small; the icons
+   carry the personality. */
+button.kf-primary,
+button.kf-glass {
+  transition: background-color 160ms ease-out, box-shadow 160ms ease-out, color 160ms ease-out,
+              transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+button.kf-primary:hover,
+button.kf-glass:hover { transform: translateY(-1px); }
+button.kf-primary:active,
+button.kf-glass:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 70ms;
+}
+
+/* Primary: hover goes a touch deeper and richer, never paler. libadwaita
+   lays a light overlay image over hovered buttons; that is what made the blue
+   look washed out, so it is switched off here. */
+button.kf-primary,
+button.kf-primary:hover,
+button.kf-primary:active { background-image: none; }
+button.kf-primary {
+  box-shadow: inset 0 1px alpha(white, 0.14), 0 1px 2px alpha(@kf_blue, 0.28), 0 2px 5px alpha(@kf_blue, 0.16);
+}
+button.kf-primary:hover {
+  background-color: mix(@accent_bg_color, #0d4fb8, 0.22);
+  box-shadow: inset 0 1px alpha(white, 0.16), 0 2px 4px alpha(@kf_blue, 0.30), 0 5px 10px alpha(@kf_blue, 0.30);
+}
+button.kf-primary:active {
+  background-color: mix(@accent_bg_color, #0a3d92, 0.40);
+  box-shadow: inset 0 1px 2px alpha(black, 0.22);
+}
+button.kf-primary.copied,
+button.kf-primary.copied:hover {
+  background-color: #26a269;
+  box-shadow: inset 0 1px alpha(white, 0.18), 0 2px 6px alpha(#26a269, 0.30);
+}
+
+/* Glass (over the lake): hover turns solid, with a blue edge and text. */
+button.kf-glass {
+  background-color: alpha(@card_bg_color, 0.72);
+  box-shadow: inset 0 0 0 1px alpha(@card_bg_color, 0.85), 0 1px 3px @kf_shadow;
+}
+button.kf-glass:hover {
+  background-color: alpha(@card_bg_color, 0.96);
+  box-shadow: inset 0 0 0 1px alpha(@accent_bg_color, 0.35), 0 5px 10px @kf_shadow;
+  color: @accent_color;
+}
+button.kf-glass:active {
+  background-color: alpha(@card_bg_color, 0.88);
+  box-shadow: inset 0 0 0 1px alpha(@accent_bg_color, 0.45), 0 1px 2px @kf_shadow;
+}
+
+list.glass-list {
+  background-color: alpha(@card_bg_color, 0.90);
+  box-shadow: 0 0 0 1px alpha(@card_bg_color, 0.6), 0 3px 9px @kf_shadow;
+}
+list.glass-list > row { background: none; }
+list.glass-list > row:hover { background-color: alpha(@accent_bg_color, 0.06); }
+
+/* ---- welcome ---- */
+/* Vertical placement is HorizonLayout's job, so only side margins here.
+   The soft halos keep text readable over the mountains. */
+.welcome-column { margin: 0 24px; }
+.welcome-title {
+  font-size: 23pt;
+  font-weight: 700;
+  color: #0e2547;
+  text-shadow: 0 0 6px alpha(white, 0.65);
+}
+.welcome-text { color: #44526a; font-size: 11.5pt; text-shadow: 0 0 5px alpha(white, 0.8); }
+.welcome-hint { color: #44526a; font-size: 10pt; text-shadow: 0 0 5px alpha(white, 0.8); }
+.recent-heading { color: alpha(@kf_ink, 0.75); }
+
+/* The capture dock: one frosted bar for every way in. Select Area keeps the
+   primary button's motion; the others are quiet until hovered. */
+.capture-dock {
+  padding: 5px;
+  border-radius: 999px;
+  background-color: alpha(white, 0.78);
+  box-shadow: inset 0 0 0 1px alpha(white, 0.9), 0 1px 2px alpha(@kf_ink, 0.08), 0 4px 10px alpha(@kf_ink, 0.10);
+}
+.capture-dock button { min-height: 36px; border-radius: 999px; }
+button.dock-primary { padding: 0 16px; }
+.dock-separator { margin: 8px 4px; min-width: 1px; background-color: alpha(@kf_ink, 0.10); }
+button.dock-button {
+  padding: 0 12px;
+  background: none;
+  box-shadow: none;
+  color: @window_fg_color;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+button.dock-button:hover { background-color: alpha(@accent_bg_color, 0.08); color: @accent_color; }
+button.dock-button:active { background-color: alpha(@accent_bg_color, 0.14); }
+button.text-link {
+  min-height: 0;
+  padding: 2px 6px;
+  color: @accent_color;
+}
+
+/* ---- busy: the real capture with the scan line over it ---- */
+.capture-thumb {
+  border-radius: 10px;
+  background-color: @view_bg_color;
+  box-shadow: 0 0 0 1px @kf_border, 0 2px 8px @kf_shadow;
+}
+.busy-title { font-size: 14pt; font-weight: 700; }
+.busy-detail { color: @kf_text_soft; }
+
+/* ---- countdown ---- */
+.count-ring {
+  min-width: 132px;
+  min-height: 132px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 3px alpha(@accent_bg_color, 0.22);
+}
+.countdown {
+  font-size: 54pt;
+  font-weight: 300;
+  color: @accent_color;
+  font-feature-settings: "tnum";
+}
+.countdown.tick   { animation: kf-tick 420ms cubic-bezier(0.25, 0.8, 0.25, 1) both; }
+.countdown.tick-b { animation: kf-tick-b 420ms cubic-bezier(0.25, 0.8, 0.25, 1) both; }
+
+
+/* ---- drag and drop ---- */
+.drop-zone {
+  margin: 10px;
+  border-radius: 14px;
+  border: 2px dashed alpha(@accent_bg_color, 0.65);
+  background-color: alpha(@window_bg_color, 0.92);
+  color: @accent_color;
+}
+.drop-zone label { font-weight: 700; font-size: 13pt; }
+
+/* ---- result ---- */
+.result-page { padding: 12px; }
+.result-paned > separator {
+  background: none;
+  min-width: 12px;
+  min-height: 12px;
+  border: none;
+  box-shadow: none;
+}
+.pane-card {
+  background: @card_bg_color;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px @kf_border, 0 1px 3px @kf_shadow;
+}
+.card-toolbar {
+  padding: 8px 10px 8px 16px;
+  min-height: 38px;
+  border-bottom: 1px solid @kf_border;
+}
+.card-footer {
+  padding: 8px 10px 8px 16px;
+  border-top: 1px solid @kf_border;
+}
+.meta { color: @kf_text_soft; font-size: 0.9em; font-feature-settings: "tnum"; }
+.preview-frame {
+  margin: 12px;
+  border-radius: 8px;
+  background-color: @kf_tint;
+}
+
+.segmented {
+  background-color: @kf_tint;
+  border-radius: 9px;
+  padding: 2px;
+}
+.segmented button {
+  min-height: 26px;
+  padding: 0 12px;
+  border-radius: 7px;
+  background: none;
+  box-shadow: none;
+  color: @kf_text_soft;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.segmented button:hover { color: @window_fg_color; }
+.segmented button:checked {
+  background-color: @card_bg_color;
+  color: @window_fg_color;
+  box-shadow: 0 0 0 1px @kf_border, 0 1px 2px @kf_shadow;
+}
+
+/* Confidence: a small coloured dot next to the figure. */
+.conf-dot {
+  min-width: 8px;
+  min-height: 8px;
+  border-radius: 999px;
+  background-color: alpha(@kf_text_soft, 0.5);
+}
+.conf-dot.high { background-color: #2ec27e; }
+.conf-dot.mid  { background-color: @kf_gold; }
+.conf-dot.low  { background-color: #e01b24; }
+
+textview.result-text,
+textview.result-text text {
+  background: none;
+  font-size: 11pt;
+}
+
+
+/* detected links, emails, phone numbers and codes */
+.detected-strip { padding: 10px 14px 0 14px; }
+.chip > button {
+  min-height: 28px;
+  padding: 0 8px;
+  background-color: alpha(@accent_bg_color, 0.08);
+  box-shadow: none;
+  transition: background-color 150ms ease;
+}
+.chip > button:hover { background-color: alpha(@accent_bg_color, 0.15); }
+.chip > button:first-child { border-radius: 8px 0 0 8px; padding-left: 10px; }
+.chip > button:last-child { border-radius: 0 8px 8px 0; }
+.chip > button image { color: @accent_color; }
+.chip.code > button { background-color: alpha(@kf_gold, 0.16); }
+.chip.code > button:hover { background-color: alpha(@kf_gold, 0.28); }
+.chip.code > button image { color: @kf_orange; }
+
+/* ---- style switcher in the main menu: tiny lakes for system / light / dark ---- */
+.theme-switcher button.theme-option {
+  min-width: 56px;
+  padding: 5px 4px 4px 4px;
+  border-radius: 10px;
+  background: none;
+  box-shadow: none;
+  transition: background-color 150ms ease-out;
+}
+.theme-switcher button.theme-option:hover { background-color: alpha(currentColor, 0.06); }
+.theme-switcher button.theme-option label { color: @kf_text_soft; }
+.theme-switcher button.theme-option:checked { background: none; }
+.theme-switcher button.theme-option:checked label { color: @accent_color; font-weight: 700; }
+
+/* "+N" next to the language name in the header. */
+/* Sits on the globe's upper-right quarter, inside the icon's own box, so it
+   never reaches the button's edge or its hover background. */
+.count-badge {
+  font-size: 0.58em;
+  font-weight: 800;
+  min-height: 11px;
+  padding: 0 3px;
+  margin: -3px -4px 0 0;
+  box-shadow: 0 0 0 1.5px @headerbar_bg_color;
+  border-radius: 999px;
+  /* Quiet: informational, so it should not compete with the actions. */
+  background-color: mix(@headerbar_bg_color, @window_fg_color, 0.16);
+  color: alpha(@window_fg_color, 0.75);
+  transition: opacity 150ms ease-out;
+}
+
+/* ---- popovers ---- */
+checkbutton.lang-check { padding: 5px 8px; border-radius: 6px; }
+checkbutton.lang-check:hover { background-color: alpha(@accent_bg_color, 0.07); }
+
+/* =====================================================================
+   Selection overlay (shown over a frozen screenshot)
+   ===================================================================== */
+window.kingfisher-overlay { background: black; }
+
+.shot-bar {
+  background-color: rgba(24, 28, 36, 0.95);
+  color: white;
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.shot-bar button {
+  color: white;
+  background: none;
+  box-shadow: none;
+  border: none;
+  min-height: 36px;
+  border-radius: 10px;
+  transition: background-color 150ms ease;
+}
+.shot-bar button:hover { background-color: rgba(255, 255, 255, 0.10); }
+.shot-bar button:active { background-color: rgba(255, 255, 255, 0.16); }
+.shot-segment {
+  background-color: rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 2px;
+}
+.shot-segment button {
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.75);
+}
+.shot-segment button:checked { background-color: rgba(255, 255, 255, 0.95); color: @kf_ink; }
+button.shot-icon { min-width: 36px; padding: 0; color: rgba(255, 255, 255, 0.8); }
+button.shot-icon:checked { background-color: rgba(255, 255, 255, 0.18); color: white; }
+.shot-sep { background-color: rgba(255, 255, 255, 0.14); min-width: 1px; margin: 8px 4px; }
+.shot-bar button.shot-primary {
+  padding: 0 16px;
+  background-color: @kf_blue;
+  color: white;
+  font-weight: 700;
+}
+.shot-bar button.shot-primary:hover { background-color: shade(@kf_blue, 1.08); }
+
+.kingfisher-busy {
+  background-color: rgba(24, 28, 36, 0.92);
+  color: white;
+  border-radius: 999px;
+  padding: 9px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* ---- About window ---- */
+window.about .about-developer { color: @kf_text_soft; font-size: 11.5pt; }
+window.about .about-version {
+  padding: 3px 12px;
+  border-radius: 999px;
+  color: @accent_color;
+  background-color: alpha(@accent_bg_color, 0.12);
+  font-weight: 700;
+  font-size: 10pt;
+}
+window.about .about-summary { font-size: 11.5pt; }
+window.about .about-legal { color: @kf_text_soft; }

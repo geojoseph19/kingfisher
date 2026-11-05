@@ -1,0 +1,22 @@
+[Desktop Entry]
+Type=Application
+Name=Kingfisher
+GenericName=Screen Text Extractor
+Comment=Select any part of the screen and extract its text, fully offline
+Icon=@APP_ID@
+Exec=@EXEC@ %F
+Terminal=false
+Categories=Graphics;Scanning;OCR;GTK;GNOME;
+Keywords=ocr;text;screenshot;extract;copy;recognize;tesseract;scan;
+MimeType=image/png;image/jpeg;image/webp;image/bmp;image/tiff;
+StartupNotify=true
+StartupWMClass=@APP_ID@
+Actions=capture-area;capture-screen;
+
+[Desktop Action capture-area]
+Name=Select Area
+Exec=@EXEC@ --capture
+
+[Desktop Action capture-screen]
+Name=Full Screen
+Exec=@EXEC@ --full

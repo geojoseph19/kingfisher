@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Build output
+build/
+dist/
+*.deb
+
+# Tooling caches
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Logs
+*.log
+
+# Personal notes kept on this machine only
+.local-notes/

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Geo Joseph -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<interface>
+  <object class="GtkShortcutsWindow" id="shortcuts">
+    <property name="modal">True</property>
+    <child>
+      <object class="GtkShortcutsSection">
+        <property name="section-name">main</property>
+        <child>
+          <object class="GtkShortcutsGroup">
+            <property name="title">Capture</property>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Select an area</property><property name="accelerator">&lt;Ctrl&gt;n</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Whole screen</property><property name="accelerator">&lt;Ctrl&gt;&lt;Shift&gt;n</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Open image</property><property name="accelerator">&lt;Ctrl&gt;o</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Paste image from clipboard</property><property name="accelerator">&lt;Ctrl&gt;&lt;Shift&gt;v</property></object></child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcutsGroup">
+            <property name="title">While selecting</property>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Extract text</property><property name="accelerator">Return space</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Area mode</property><property name="accelerator">s</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Screen mode</property><property name="accelerator">c</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Select the whole screen</property><property name="accelerator">&lt;Ctrl&gt;a</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Move selection (Shift: 10 px)</property><property name="accelerator">Left Right Up Down</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Resize selection</property><property name="accelerator">&lt;Alt&gt;Right &lt;Alt&gt;Down</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Cancel</property><property name="accelerator">Escape</property></object></child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcutsGroup">
+            <property name="title">Result</property>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Copy the text (or just the selection)</property><property name="accelerator">&lt;Ctrl&gt;&lt;Shift&gt;c</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Save as text file</property><property name="accelerator">&lt;Ctrl&gt;s</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Go back</property><property name="accelerator">&lt;Alt&gt;Left</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">History</property><property name="accelerator">&lt;Ctrl&gt;h</property></object></child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcutsGroup">
+            <property name="title">General</property>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Preferences</property><property name="accelerator">&lt;Ctrl&gt;comma</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Languages</property><property name="accelerator">&lt;Ctrl&gt;l</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Keyboard shortcuts</property><property name="accelerator">&lt;Ctrl&gt;question</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Close window</property><property name="accelerator">&lt;Ctrl&gt;w</property></object></child>
+            <child><object class="GtkShortcutsShortcut">
+              <property name="title">Quit</property><property name="accelerator">&lt;Ctrl&gt;q</property></object></child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

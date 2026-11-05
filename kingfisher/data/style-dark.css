@@ -1,0 +1,33 @@
+/* SPDX-FileCopyrightText: 2026 Geo Joseph
+   SPDX-License-Identifier: GPL-3.0-or-later */
+
+/* Dark-mode overrides for style.css, loaded on top of it when the system
+   prefers a dark appearance. Only colours change. */
+
+@define-color kf_blue #2f80ed;
+@define-color kf_tint #1f2833;
+@define-color kf_text_soft #9aa7b8;
+@define-color kf_border rgba(255, 255, 255, 0.09);
+@define-color kf_shadow rgba(0, 0, 0, 0.30);
+
+@define-color accent_bg_color @kf_blue;
+@define-color accent_color #7cb4ff;
+@define-color window_bg_color #161b22;
+@define-color view_bg_color #1c222b;
+@define-color headerbar_bg_color #161b22;
+@define-color headerbar_backdrop_color #161b22;
+@define-color card_bg_color #1c222b;
+@define-color popover_bg_color #212833;
+@define-color dialog_bg_color #1a2028;
+
+.welcome-title { color: #f2f5fb; text-shadow: 0 0 6px alpha(black, 0.45); }
+.welcome-text, .welcome-hint { color: #b4c0d0; text-shadow: 0 0 5px alpha(black, 0.5); }
+.recent-heading { color: alpha(white, 0.80); }
+.capture-dock {
+  background-color: alpha(#1c222b, 0.80);
+  box-shadow: inset 0 0 0 1px alpha(white, 0.08), 0 4px 10px alpha(black, 0.30);
+}
+.dock-separator { background-color: alpha(white, 0.10); }
+
+/* The selected segment must stand out from the track in the dark too. */
+.segmented button:checked { background-color: alpha(white, 0.12); }

@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Geo Joseph
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Kingfisher launcher.
+
+Works from a source checkout (bin/kingfisher), a per-user install
+(~/.local/bin/kingfisher -> ~/.local/share/kingfisher/app/bin/kingfisher) and the system
+package (/usr/bin/kingfisher with the code in /usr/share/kingfisher).
+"""
+
+import os
+import sys
+
+# Run on the system's Python packages only. Packages in ~/.local (pip
+# --user) can be newer or older than the distribution's and would change
+# behaviour from what Kingfisher is packaged and tested with.
+if not sys.flags.no_user_site:
+    os.execv(sys.executable, [sys.executable, "-s", *sys.argv])
+
+here = os.path.dirname(os.path.realpath(__file__))
+prefix = os.path.dirname(here)
+for candidate in (prefix, os.path.join(prefix, "share", "kingfisher")):
+    if os.path.isfile(os.path.join(candidate, "kingfisher", "__init__.py")):
+        sys.path.insert(0, candidate)
+        break
+
+os.environ.setdefault("KINGFISHER_LAUNCHER", os.path.abspath(__file__))
+
+from kingfisher.__main__ import main  # noqa: E402
+
+sys.exit(main())

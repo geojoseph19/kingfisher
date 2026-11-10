@@ -1,0 +1,151 @@
+name: kingfisher
+title: Kingfisher
+# Version is read from kingfisher/__init__.py in override-pull.
+adopt-info: kingfisher
+summary: Copy text from anything on your screen
+description: |
+  Kingfisher reads the text in anything you can see: a video, a photo, a
+  scanned PDF, an error message. Select an area of the screen and the text
+  is on your clipboard, ready to paste.
+
+  Everything happens on your computer, so what you capture stays private.
+
+  - Precise area selection on any monitor
+  - Read the whole screen, image files and images on the clipboard
+  - QR codes and barcodes
+  - Open links, email addresses and phone numbers with one click
+  - Keep the original layout or join wrapped lines into paragraphs
+  - History of your last 20 results, saved as text only
+  - Top-bar icon, and a keyboard shortcut you can add in Settings
+  - English and 20 other languages included, among them Arabic, Chinese,
+    Hindi, Japanese, Russian and Spanish
+  - Light and dark styles
+grade: stable
+confinement: strict
+base: core26
+license: GPL-3.0-or-later
+icon: snap/gui/kingfisher.png
+contact: https://github.com/geojoseph19/kingfisher/issues
+issues: https://github.com/geojoseph19/kingfisher/issues
+source-code: https://github.com/geojoseph19/kingfisher
+website: https://github.com/geojoseph19/kingfisher
+
+platforms:
+  amd64:
+  # Built on arm64 (snapcraft remote-build), never cross-built: a cross-build
+  # stages the build machine's packages.
+  arm64:
+
+apps:
+  kingfisher:
+    command: bin/kingfisher
+    extensions: [gnome]
+    # Generated from packaging/kingfisher.desktop.in in override-build.
+    desktop: usr/share/applications/io.github.geojoseph19.Kingfisher.desktop
+    # Written by "Start at login" to $SNAP_USER_DATA/.config/autostart.
+    autostart: io.github.geojoseph19.Kingfisher.desktop
+    plugs:
+      - home
+      - gsettings
+      - unity7
+      # Not auto-connected: sudo snap connect kingfisher:removable-media
+      - removable-media
+    environment:
+      TESSDATA_PREFIX: $SNAP/usr/share/tesseract-ocr/5/tessdata
+
+slots:
+  # Allows the confined app to own its GApplication bus name.
+  kingfisher:
+    interface: dbus
+    bus: session
+    name: io.github.geojoseph19.Kingfisher
+
+parts:
+  runtime:
+    plugin: nil
+    stage-packages:
+      # core26 ships no Python interpreter.
+      - python3
+      - python3-gi
+      - python3-gi-cairo
+      - python3-cairo
+      - python3-pil
+      - python3-pyzbar
+      - libzbar0t64
+      - gir1.2-dbusmenu-glib-0.4
+      - tesseract-ocr
+      # Language data is bundled: the sandbox cannot read host tessdata.
+      - tesseract-ocr-eng
+      - tesseract-ocr-ara
+      - tesseract-ocr-ben
+      - tesseract-ocr-chi-sim
+      - tesseract-ocr-deu
+      - tesseract-ocr-fra
+      - tesseract-ocr-hin
+      - tesseract-ocr-ind
+      - tesseract-ocr-ita
+      - tesseract-ocr-jpn
+      - tesseract-ocr-kor
+      - tesseract-ocr-mar
+      - tesseract-ocr-pol
+      - tesseract-ocr-por
+      - tesseract-ocr-rus
+      - tesseract-ocr-spa
+      - tesseract-ocr-tam
+      - tesseract-ocr-tel
+      - tesseract-ocr-tur
+      - tesseract-ocr-urd
+      - tesseract-ocr-vie
+
+  kingfisher:
+    after: [runtime]
+    plugin: dump
+    source: .
+    override-pull: |
+      craftctl default
+      version="$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' "$CRAFT_PART_SRC/kingfisher/__init__.py")"
+      [ -n "$version" ] || { echo "VERSION not found in kingfisher/__init__.py" >&2; exit 1; }
+      craftctl set version="$version"
+    override-build: |
+      craftctl default
+      app_id="$(sed -n 's/^APP_ID = "\(.*\)"$/\1/p' kingfisher/__init__.py)"
+      mkdir -p "$CRAFT_PART_INSTALL/usr/share/applications"
+      sed -e 's|^Icon=@APP_ID@$|Icon=${SNAP}/meta/gui/kingfisher.png|' \
+          -e "s|@APP_ID@|$app_id|g" -e 's|@EXEC@|kingfisher|g' \
+          packaging/kingfisher.desktop.in \
+          > "$CRAFT_PART_INSTALL/usr/share/applications/$app_id.desktop"
+    stage:
+      - bin/kingfisher
+      - kingfisher
+      - usr/share/applications
+      - LICENSE
+      - -kingfisher/__pycache__
+    override-prime: |
+      craftctl default
+      python="$CRAFT_PRIME/usr/bin/python3"
+      # Every ELF file must be built for the target architecture.
+      "$python" - "$CRAFT_PRIME" "$CRAFT_ARCH_BUILD_FOR" <<'CHECK'
+      import os, sys
+      root, arch = sys.argv[1], sys.argv[2]
+      expected = {"amd64": 62, "arm64": 183}[arch]
+      wrong = []
+      for top, _dirs, files in os.walk(root):
+          for name in files:
+              path = os.path.join(top, name)
+              if os.path.islink(path) or not os.path.isfile(path):
+                  continue
+              with open(path, "rb") as f:
+                  head = f.read(20)
+              if head[:4] == b"\x7fELF" and int.from_bytes(head[18:20], "little") != expected:
+                  wrong.append(os.path.relpath(path, root))
+      if wrong:
+          sys.exit(f"{len(wrong)} files are not built for {arch}, e.g. {wrong[:3]}")
+      CHECK
+      # The snap is read-only, so bytecode is compiled at build time.
+      "$python" -m compileall -q -j 0 \
+          --invalidation-mode unchecked-hash \
+          -s "$CRAFT_PRIME" -p /snap/kingfisher/current \
+          -x '/(test|tests|idle_test)/' \
+          "$CRAFT_PRIME/kingfisher" \
+          "$CRAFT_PRIME/usr/lib/python3/dist-packages" \
+          "$CRAFT_PRIME"/usr/lib/python3.[0-9]*

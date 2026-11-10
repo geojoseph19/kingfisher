@@ -10,6 +10,8 @@ from pathlib import Path
 
 from gi.repository import Gdk, Gio, Gtk
 
+from . import IS_SNAP
+
 MEDIA_KEYS = "org.gnome.settings-daemon.plugins.media-keys"
 CUSTOM_SCHEMA = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 BINDING_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/kingfisher/"
@@ -17,8 +19,19 @@ DEFAULT_BINDING = "<Shift><Super>t"
 
 
 def supported():
+    if IS_SNAP:
+        return False   # the sandbox cannot change the host's GNOME settings
     source = Gio.SettingsSchemaSource.get_default()
     return bool(source and source.lookup(MEDIA_KEYS, True) and source.lookup(CUSTOM_SCHEMA, True))
+
+
+def unavailable_reason():
+    if IS_SNAP:
+        return ("The Snap Store version can't change system settings. To add a shortcut, open "
+                "Settings › Keyboard › View and Customize Shortcuts › Custom Shortcuts "
+                "and use the command "
+                "“kingfisher --capture”.")
+    return "GNOME custom shortcuts are not available on this desktop."
 
 
 def launch_command():
@@ -58,7 +71,7 @@ def binding_label():
 
 def enable(accel=DEFAULT_BINDING):
     if not supported():
-        raise RuntimeError("GNOME custom shortcuts are not available on this desktop.")
+        raise RuntimeError(unavailable_reason())
     custom = _custom()
     custom.set_string("name", "Kingfisher — Extract Text from Screen")
     custom.set_string("command", launch_command())

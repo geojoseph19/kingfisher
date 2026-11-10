@@ -82,6 +82,22 @@ Add the languages you read from the Languages window. Your system's languages ar
 
 ## Install
 
+### Snap Store
+
+Find Kingfisher in Ubuntu's App Center, or run:
+
+```bash
+sudo snap install kingfisher
+```
+
+The snap includes English and 20 other languages. It runs in a sandbox, so three things work differently:
+
+- **Keyboard shortcut.** The snap can't change system settings. Open **Settings › Keyboard › View and Customize Shortcuts › Custom Shortcuts**, add one, and use `kingfisher --capture` as the command.
+- **Screen access.** GNOME asks once for permission, the first time you capture. See [Screen access](#screen-access).
+- **Files outside your home folder.** To open images on USB drives and other mounted disks, run `sudo snap connect kingfisher:removable-media` once.
+
+High-accuracy models go in `~/snap/kingfisher/common/tessdata`.
+
 ### Ubuntu package
 
 Download `kingfisher_<version>_all.deb` from the [Releases page](https://github.com/geojoseph19/kingfisher/releases) and install it:
@@ -113,6 +129,7 @@ For the top-bar icon, enable the **Ubuntu AppIndicators** extension, which Ubunt
 
 If you set a keyboard shortcut or turned on **Start at login**, turn them off in Preferences first. Then:
 
+- Snap: `sudo snap remove --purge kingfisher` removes it with its settings and history. Without `--purge`, snapd keeps a copy of them for 31 days. A shortcut you added in Settings stays there until you remove it.
 - Ubuntu package: `sudo apt remove kingfisher`
 - From source: `./uninstall.sh`, or `./uninstall.sh --purge` to also remove your settings, history and downloaded models
 
@@ -163,10 +180,31 @@ Turn on only the languages you need: each one makes reading a little slower.
 
 | Problem | Solution |
 |---|---|
-| A "Share this screenshot?" dialog appears on every capture | Install `gnome-screenshot`. |
+| A "Share this screenshot?" dialog appears on every capture | Ubuntu package: install `gnome-screenshot`. Snap: see [Screen access](#screen-access). |
+| Snap: "Kingfisher can't read files in …" | The file is outside the sandbox. For USB drives and mounted disks, run `sudo snap connect kingfisher:removable-media`. Otherwise choose it with **Open Image**, or copy it into your home folder. |
 | The top-bar icon is missing | Enable the **Ubuntu AppIndicators** extension in the Extensions app. |
 | Kingfisher says a component is missing | Click **Install** on that page. |
 | A key doesn't work as a shortcut | Some laptop keys send nothing in their media layer. Use them with <kbd>Fn</kbd>, or choose another key. The shortcut recorder in Preferences shows what each key sends. |
+
+### Screen access
+
+The Ubuntu package captures through `gnome-screenshot`, which GNOME lets take screenshots without asking.
+
+The snap runs in a sandbox, so GNOME asks you once, the first time you capture:
+
+- **Ubuntu 24.04 and later:** "Allow Kingfisher to Take Screenshots?" Choose **Allow**. To change your answer later, run the command below and capture again.
+
+  ```bash
+  gdbus call --session --dest org.freedesktop.impl.portal.PermissionStore \
+    --object-path /org/freedesktop/impl/portal/PermissionStore \
+    --method org.freedesktop.impl.portal.PermissionStore.DeletePermission \
+    screenshot screenshot snap.kingfisher
+  ```
+
+- **Ubuntu 22.04:** a screen-sharing dialog. Select your screen (all of them, if you have several), turn on **Remember this selection** and choose **Share**. Kingfisher then reads the screen for a moment at each capture, without asking again. GNOME may show its screen-sharing indicator briefly. To withdraw the permission, choose **Preferences › Screen Access › Forget**. If you connect a different monitor, GNOME asks again once.
+- **Xorg sessions** ("Ubuntu on Xorg"): no permission is needed.
+
+Kingfisher reads the screen only when you start a capture, and the picture never leaves your computer.
 
 ## Privacy
 

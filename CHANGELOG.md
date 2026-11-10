@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.0.1 - 2026-11-10
+
+First release on the Snap Store.
+
+### Snap Store version
+
+- GNOME asks for screen access once, not on every capture: through the screenshot
+  permission on Ubuntu 24.04 and later, and a remembered screen-sharing selection on
+  Ubuntu 22.04. Xorg sessions need no permission
+- **Preferences › Screen Access** shows the permission and can forget a remembered selection
+- English and 20 other recognition languages are included
+- Start at login works through snapd
+- The top-bar icon menu works inside the sandbox
+- QR codes and barcodes are read inside the sandbox
+- High-accuracy models live in `~/snap/kingfisher/common/tessdata` and survive updates
+- The keyboard shortcut is added by hand in GNOME Settings, with the command
+  `kingfisher --capture`; Preferences explains how
+- Images on USB drives and mounted disks can be opened after
+  `sudo snap connect kingfisher:removable-media`
+
+### Fixed
+
+- Opening an image from the file manager or the command line failed with some
+  PyGObject versions
+- File paths in the interface no longer show the full home folder inside the snap
+- A screenshot taken through the desktop portal on Ubuntu 22.04 was left behind in
+  Pictures inside the snap; it is now removed
+
 ## 1.0.0 - 2026-11-07
 
 First public release.

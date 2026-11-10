@@ -318,7 +318,6 @@ class ScreenGlyph(ButtonGlyph):
     def draw_glyph(self, cr, width, height, fg):
         h, p = self.hover, self.press
         cx = width / 2
-        # Monitor body and stand.
         left, top, w, hgt = 1.5, 2.5, width - 3, 10.5
         cr.set_line_width(1.8)
         cr.set_source_rgba(*fg)
@@ -362,7 +361,6 @@ class OpenGlyph(ButtonGlyph):
         flap = top + 5.0 + 1.4 * h                   # the front's top edge drops as it opens
         cr.set_line_width(1.8)
         cr.set_source_rgba(*fg)
-        # Back, with its tab.
         cr.move_to(left, bottom)
         cr.line_to(left, top)
         cr.line_to(left + 5.0, top)
@@ -371,7 +369,6 @@ class OpenGlyph(ButtonGlyph):
         cr.line_to(right, bottom)
         cr.close_path()
         cr.stroke()
-        # The page, only above the front.
         if h > 0.02:
             page_top = top + 3.4 - 4.2 * h + 2.4 * p
             cr.save()
@@ -384,7 +381,6 @@ class OpenGlyph(ButtonGlyph):
             cr.set_line_width(1.4)
             cr.stroke()
             cr.restore()
-        # Front, tipping open.
         cr.set_source_rgba(*fg)
         cr.set_line_width(1.8)
         cr.move_to(left, bottom)
@@ -457,7 +453,6 @@ class SaveGlyph(ButtonGlyph):
         h, p = self.hover, self.press
         cx = width / 2
         dip = 0.8 * p
-        # Tray.
         cr.set_line_width(1.8)
         cr.set_source_rgba(*fg)
         cr.move_to(2.5, 11.0 + dip)
@@ -465,7 +460,6 @@ class SaveGlyph(ButtonGlyph):
         cr.line_to(width - 2.5, 14.2 + dip)
         cr.line_to(width - 2.5, 11.0 + dip)
         cr.stroke()
-        # Arrow, moving down.
         drop = 1.4 * h + 1.6 * p
         top, tip = 2.2 + drop, 10.6 + drop * 0.55
         for colour, alpha in ((fg[:3], fg[3] * (1 - h)), (AMBER, h)):   # crossfade to gold
@@ -503,7 +497,6 @@ class CopyGlyph(ButtonGlyph):
             cr.set_source_rgba(*fg)
         cr.stroke()
         cr.restore()
-        # The page.
         cr.set_source_rgba(*fg)
         cr.set_line_width(1.8)
         _rounded(cr, fx, fy, w, hh, r)
@@ -639,7 +632,6 @@ class ExtractGlyph(ButtonGlyph):
             cr.line_to(x, y)
             cr.line_to(x - sx * arm, y)
         cr.stroke()
-        # The T.
         cr.set_line_width(2.0)
         cr.move_to(cx - 3.6, cy - 3.6)
         cr.line_to(cx + 3.6, cy - 3.6)

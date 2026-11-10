@@ -20,7 +20,12 @@ from pathlib import Path
 from gi.repository import GLib
 from PIL import Image, ImageOps
 
-USER_TESSDATA = Path(GLib.get_user_data_dir()) / "kingfisher" / "tessdata"
+from . import IS_SNAP
+
+# Inside the snap, the per-revision data folder is copied on every update, so
+# large model files go to the folder shared by all revisions instead.
+USER_TESSDATA = (Path(os.environ["SNAP_USER_COMMON"]) / "tessdata" if IS_SNAP and os.environ.get("SNAP_USER_COMMON")
+                 else Path(GLib.get_user_data_dir()) / "kingfisher" / "tessdata")
 SYSTEM_TESSDATA = [
     Path("/usr/share/tesseract-ocr/5/tessdata"),
     Path("/usr/share/tesseract-ocr/4.00/tessdata"),

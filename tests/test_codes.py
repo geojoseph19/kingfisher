@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2026 Geo Joseph
 # SPDX-License-Identifier: GPL-3.0-or-later
+import subprocess
+import sys
 import unittest
+from pathlib import Path
 
 from PIL import Image, ImageOps
 
@@ -74,6 +77,21 @@ def draw_ean13(number, module=3, height=120):
             img.paste(0, (quiet + i * module, quiet, quiet + (i + 1) * module, quiet + height))
     return img.convert("RGB")
 
+
+
+@unittest.skipUnless(codes.available(), "python3-pyzbar is not installed")
+class LibraryLookupTests(unittest.TestCase):
+    def test_zbar_loads_when_ldconfig_does_not_list_it(self):
+        # Inside the snap, ctypes.util.find_library() cannot see the snap's
+        # libzbar, and pyzbar gives up. Run in a fresh interpreter so the
+        # import really happens.
+        script = ("import ctypes.util; ctypes.util.find_library = lambda name: None\n"
+                  "from kingfisher import codes\n"
+                  "raise SystemExit(0 if codes.available() else 1)\n")
+        root = Path(__file__).resolve().parent.parent
+        result = subprocess.run([sys.executable, "-c", script], cwd=root, capture_output=True, text=True,
+                                check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 if __name__ == "__main__":
     unittest.main()

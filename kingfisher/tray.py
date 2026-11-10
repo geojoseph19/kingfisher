@@ -20,7 +20,9 @@ except (ValueError, ImportError):
 WATCHER_BUS = "org.kde.StatusNotifierWatcher"
 WATCHER_PATH = "/StatusNotifierWatcher"
 ITEM_PATH = "/StatusNotifierItem"
-MENU_PATH = "/KingfisherTrayMenu"
+# Must stay below /StatusNotifierItem: the snap's unity7 interface only lets the
+# tray host read a menu served at /StatusNotifierItem/menu.
+MENU_PATH = "/StatusNotifierItem/menu"
 
 ITEM_XML = """
 <node>

@@ -5,7 +5,7 @@
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Pango
 from PIL import Image
 
-from . import APP_NAME, ICON_DIR
+from . import APP_NAME, ICON_DIR, IS_SNAP
 from .clipboard import set_clipboard_text
 from .codes import icon_name as code_icon
 from .detect import find_entities
@@ -557,8 +557,13 @@ class MainWindow(Adw.ApplicationWindow):
             self.hint_keys.append(Gtk.Label(label="Press"))
             self.hint_keys.append(keycaps(binding_label))
             self.hint_keys.append(Gtk.Label(label="in any app to start"))
-        self.hint_keys.set_visible(bool(binding_label))
-        self.hint_setup.set_visible(not binding_label)
+        elif IS_SNAP:
+            # The sandbox cannot add a GNOME shortcut; the top bar icon takes
+            # its place as the way into a capture from another app.
+            self.hint_keys.append(Gtk.Label(label="Use the Kingfisher icon in the top bar "
+                                                  "to start from any app"))
+        self.hint_keys.set_visible(bool(binding_label) or IS_SNAP)
+        self.hint_setup.set_visible(not binding_label and not IS_SNAP)
 
     # ============================================================ missing
     def _build_missing(self):
@@ -589,7 +594,6 @@ class MainWindow(Adw.ApplicationWindow):
     def _build_busy(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0,
                       halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, margin_bottom=60)
-        # The capture itself, with the scan line passing over it.
         frame = Gtk.Overlay(halign=Gtk.Align.CENTER, overflow=Gtk.Overflow.HIDDEN)
         frame.add_css_class("capture-thumb")
         self.busy_picture = Gtk.Picture(can_shrink=True, keep_aspect_ratio=False)
@@ -760,7 +764,6 @@ class MainWindow(Adw.ApplicationWindow):
         bar.append(self.stats_label)
         text_card.append(bar)
 
-        # Links, emails, phone numbers and codes found in the result.
         self.detected = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, min_children_per_line=1,
                                     max_children_per_line=4,
                                     column_spacing=8, row_spacing=8, homogeneous=False,
@@ -1061,7 +1064,6 @@ class MainWindow(Adw.ApplicationWindow):
         keys = Gtk.EventControllerKey(propagation_phase=Gtk.PropagationPhase.CAPTURE)
         keys.connect("key-pressed", lambda *_: note_activity() or False)
         self.add_controller(keys)
-        # The mouse "back" button does the same.
         back = Gtk.GestureClick(button=8)
         back.connect("pressed", lambda *_: self.go_home())
         self.add_controller(back)

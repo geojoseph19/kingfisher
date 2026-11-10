@@ -30,6 +30,7 @@ DEFAULTS = {
     "ui_version": 0,
     "shortcut_key": "<Shift><Super>t",
     "last_selection": [],         # restored next time, like GNOME's screenshot tool
+    "screen_access_explained": False,  # snap: the note before GNOME's screen-sharing dialog was shown
     # Window
     "color_scheme": "default",   # default (follow the system) | light | dark
     "window_width": 1080,

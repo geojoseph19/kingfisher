@@ -193,7 +193,6 @@ class LakeScene(Animated):
         # The sun or moon itself is drawn each frame (see _draw), so it is
         # exactly round even while a stretched still layer is shown.
 
-        # Lake, then hills and their softened reflections.
         cr.set_source(_gradient(horizon, height, pal["lake"]))
         cr.rectangle(0, horizon, width, height - horizon)
         cr.fill()
@@ -458,7 +457,6 @@ class LakeScene(Animated):
         cr.close_path()
         cr.set_source_rgb(*KINGFISHER_BLUE)
         cr.fill()
-        # Orange underside.
         cr.move_to(-9, 1.0)
         cr.curve_to(-4, 4.4, 2, 4.2, 5.4, 2.0)
         cr.line_to(5.4, 0.6)
@@ -466,14 +464,12 @@ class LakeScene(Animated):
         cr.close_path()
         cr.set_source_rgb(*KINGFISHER_ORANGE)
         cr.fill()
-        # Long dark beak.
         cr.move_to(5.5, -1.6)
         cr.line_to(14, 0)
         cr.line_to(5.5, 1.6)
         cr.close_path()
         cr.set_source_rgb(0.10, 0.12, 0.16)
         cr.fill()
-        # Bright eye and a light stripe along the back.
         cr.arc(3.2, -1.2, 0.9, 0, 2 * math.pi)
         cr.set_source_rgb(1, 1, 1)
         cr.fill()

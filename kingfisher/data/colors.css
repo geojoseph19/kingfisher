@@ -1,0 +1,19 @@
+/* SPDX-FileCopyrightText: 2026 Geo Joseph
+   SPDX-License-Identifier: GPL-3.0-or-later */
+
+/* libadwaita 1.6 and later take these colors from CSS variables and ignore
+   the named colors in style.css. Loaded only there, because older GTK
+   versions reject the syntax. Keep the values in step with style.css. */
+
+:root {
+  --accent-bg-color: #1b6fe0;
+  --accent-color: #1560c8;
+  --accent-fg-color: #ffffff;
+  --window-bg-color: #f6f8fb;
+  --view-bg-color: #ffffff;
+  --headerbar-bg-color: #f6f8fb;
+  --headerbar-backdrop-color: #f6f8fb;
+  --card-bg-color: #ffffff;
+  --popover-bg-color: #ffffff;
+  --dialog-bg-color: #f6f8fb;
+}

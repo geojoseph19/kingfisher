@@ -3,9 +3,11 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from gi.repository import GLib
 
+from kingfisher import autostart
 from kingfisher.autostart import _desktop_quote, exec_value
 
 
@@ -44,6 +46,15 @@ class DesktopQuoteTests(unittest.TestCase):
 
     def test_quote_alone_still_quotes_spaces(self):
         self.assertEqual(_desktop_quote("a b"), '"a b"')
+
+
+class SnapTests(unittest.TestCase):
+    def test_snap_entry_only_carries_arguments_for_snapd(self):
+        # snapd starts the app's own command at login and keeps only the
+        # arguments, so the entry must not point into a revision folder.
+        with mock.patch.object(autostart, "IS_SNAP", True), \
+                mock.patch.dict("os.environ", {"KINGFISHER_LAUNCHER": "/snap/kingfisher/x4/bin/kingfisher"}):
+            self.assertEqual(parse_exec(autostart._command()), ["kingfisher", "--background"])
 
 
 if __name__ == "__main__":

@@ -28,3 +28,9 @@ htmlcov/
 
 # Personal notes kept on this machine only
 .local-notes/
+
+# Snap builds
+*.snap
+parts/
+stage/
+prime/

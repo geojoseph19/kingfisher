@@ -1,0 +1,17 @@
+/* SPDX-FileCopyrightText: 2026 Geo Joseph
+   SPDX-License-Identifier: GPL-3.0-or-later */
+
+/* Dark counterpart of colors.css, loaded with style-dark.css. Keep the
+   values in step with style-dark.css. */
+
+:root {
+  --accent-bg-color: #2f80ed;
+  --accent-color: #7cb4ff;
+  --window-bg-color: #161b22;
+  --view-bg-color: #1c222b;
+  --headerbar-bg-color: #161b22;
+  --headerbar-backdrop-color: #161b22;
+  --card-bg-color: #1c222b;
+  --popover-bg-color: #212833;
+  --dialog-bg-color: #1a2028;
+}

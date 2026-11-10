@@ -26,12 +26,27 @@ def _load():
     if pyzbar is None and not _load_tried:
         _load_tried = True
         try:
-            import importlib
-            importlib.invalidate_caches()
-            pyzbar = importlib.import_module("pyzbar.pyzbar")
+            pyzbar = _import_pyzbar()
         except (ImportError, OSError):   # library missing or libzbar not installed
             pyzbar = None
     return pyzbar
+
+
+def _import_pyzbar():
+    import importlib
+    importlib.invalidate_caches()
+    try:
+        return importlib.import_module("pyzbar.pyzbar")
+    except ImportError:
+        # pyzbar looks libzbar up in the system's ldconfig cache, which never
+        # lists a snap's own libraries. Load it by its soname instead: the
+        # dynamic loader also searches LD_LIBRARY_PATH.
+        import ctypes
+
+        from pyzbar import zbar_library
+        library = ctypes.cdll.LoadLibrary("libzbar.so.0")
+        zbar_library.load = lambda: (library, [])
+        return importlib.import_module("pyzbar.pyzbar")
 
 
 def reload():

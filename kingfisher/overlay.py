@@ -253,7 +253,6 @@ class OverlayWindow(Gtk.Window):
                       margin_start=36, margin_end=36)
         bar.add_css_class("shot-bar")
 
-        # Selection / Screen segmented switch
         modes = Gtk.Box(spacing=0)
         modes.add_css_class("shot-segment")
         self.mode_buttons = {}
@@ -273,7 +272,6 @@ class OverlayWindow(Gtk.Window):
         bar.append(modes)
         bar.append(self._separator())
 
-        # What happens with the text
         open_btn = Gtk.ToggleButton(tooltip_text="Open the text in Kingfisher")
         open_btn.set_child(WindowGlyph(open_btn))
         open_btn.update_property([Gtk.AccessibleProperty.LABEL], ["Open the text in Kingfisher"])
@@ -674,7 +672,6 @@ class OverlayWindow(Gtk.Window):
         img_x, img_y = layout.to_image_point(self.index, px, py)
         zoom = LOUPE_ZOOM / layout.scale_x
 
-        # Shadow + zoomed pixels.
         self._rounded_rect(cr, lx - 1, ly + 2, size + 2, size + 2, 16)
         cr.set_source_rgba(0, 0, 0, 0.3)
         cr.fill()
@@ -691,7 +688,6 @@ class OverlayWindow(Gtk.Window):
         cr.paint()
         cr.restore()
 
-        # Faint pixel grid and the centre pixel.
         cr.save()
         self._rounded_rect(cr, lx, ly, size, size, 14)
         cr.clip()
@@ -716,7 +712,6 @@ class OverlayWindow(Gtk.Window):
         cr.set_line_width(2)
         cr.stroke()
 
-        # Pointer position caption.
         label = f"{round(img_x)}, {round(img_y)}"
         cr.select_font_face("Cantarell", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
         cr.set_font_size(11)

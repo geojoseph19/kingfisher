@@ -4,7 +4,7 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name>Kingfisher</name>
-  <summary>Extract text from any part of your screen, offline</summary>
+  <summary>Copy text from anything on your screen</summary>
   <developer id="io.github.geojoseph19">
     <name>Geo Joseph</name>
   </developer>
@@ -32,23 +32,23 @@
   <screenshots>
     <screenshot type="default">
       <caption>The start page</caption>
-      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/start-light.png</image>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.1/docs/screenshots/store/start-light.png</image>
     </screenshot>
     <screenshot>
       <caption>Text, links and a QR code read from a capture</caption>
-      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/result.png</image>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.1/docs/screenshots/store/result.png</image>
     </screenshot>
     <screenshot>
       <caption>Reading a capture in dark mode</caption>
-      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/reading-dark.png</image>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.1/docs/screenshots/store/reading-dark.png</image>
     </screenshot>
     <screenshot>
       <caption>The start page in dark mode</caption>
-      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/start-dark.png</image>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.1/docs/screenshots/store/start-dark.png</image>
     </screenshot>
     <screenshot>
       <caption>History of recent results</caption>
-      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.0/docs/screenshots/store/history.png</image>
+      <image>https://raw.githubusercontent.com/geojoseph19/kingfisher/v1.0.1/docs/screenshots/store/history.png</image>
     </screenshot>
   </screenshots>
   <branding>

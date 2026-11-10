@@ -34,6 +34,27 @@ jobs:
       - name: Unit tests
         run: /usr/bin/python3 -m unittest discover -s tests -t . -v
 
+  snap:
+    name: Build snap
+    runs-on: ubuntu-24.04
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snapcore/action-build@v1
+        id: build
+        with:
+          # The recipe also cross-builds arm64; CI installs and checks amd64.
+          snapcraft-args: --platform amd64
+      - name: Check that the snap's runtime loads the application
+        run: |
+          sudo snap install --dangerous "${{ steps.build.outputs.snap }}"
+          snap run --shell kingfisher -c \
+            'cd "$SNAP" && PYTHONDONTWRITEBYTECODE=1 python3 -s -c "import kingfisher.capture, kingfisher.screencast, kingfisher.codes, kingfisher.ocr"'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kingfisher-snap
+          path: ${{ steps.build.outputs.snap }}
+
   package:
     name: Build .deb
     runs-on: ubuntu-22.04

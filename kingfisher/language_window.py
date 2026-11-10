@@ -4,6 +4,7 @@
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
+from . import IS_SNAP
 from .clipboard import set_clipboard_text
 from .effects import spinner
 from .languages import (
@@ -189,6 +190,11 @@ class LanguagesWindow(Adw.Window):
         return row
 
     def _fallback(self):
+        if IS_SNAP:
+            return Adw.PreferencesGroup(
+                title="More Languages",
+                description="The Snap Store version includes the languages listed above. "
+                            "More will come with app updates.")
         box = Adw.PreferencesGroup(
             title="Add Languages",
             description="Software installation isn't available from here. Add a language with "

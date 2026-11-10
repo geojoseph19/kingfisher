@@ -3,6 +3,7 @@
 """Application controller: command line, capture flow, OCR jobs and actions."""
 
 import io
+import os
 import sys
 import threading
 from pathlib import Path
@@ -10,9 +11,9 @@ from pathlib import Path
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from PIL import Image, ImageOps
 
-from . import APP_ICON, APP_ID, APP_NAME, DATA_DIR, ICON_DIR, VERSION, shortcut, tray
+from . import APP_ICON, APP_ID, APP_NAME, DATA_DIR, ICON_DIR, IS_SNAP, VERSION, display_path, shortcut, tray
 from . import codes as code_reader
-from .capture import capture_screen, silent_capture_available
+from .capture import capture_screen, last_capture_was_silent, needs_access_note
 from .history import History, HistoryEntry
 from .languages import PackageKitInstaller
 from .ocr import CancelToken, OcrCancelled, OcrError, TesseractEngine
@@ -28,6 +29,30 @@ RESIDENT_TIMEOUT_MS = 10 * 60 * 1000   # stay loaded after the last window close
 
 COLOR_SCHEMES = {"default": Adw.ColorScheme.DEFAULT, "light": Adw.ColorScheme.FORCE_LIGHT,
                  "dark": Adw.ColorScheme.FORCE_DARK}
+
+
+def option_path(value):
+    """A path from GLib.OPTION_REMAINING.
+
+    PyGObject exposes a FILENAME_ARRAY as a list of byte values ending in a
+    NUL rather than as a string; other versions return bytes."""
+    if isinstance(value, (bytes, bytearray)):
+        return os.fsdecode(value)
+    if isinstance(value, (list, tuple)):
+        return os.fsdecode(bytes(value).rstrip(b"\0"))
+    return value
+
+
+def unreadable_message(path, error, sandboxed=IS_SNAP):
+    """What to say when an image file cannot be opened.
+
+    The snap reaches the home folder and, once connected, removable drives.
+    Anything else is outside its sandbox: such a file is either refused or,
+    under /tmp, not there at all, since the snap has a /tmp of its own."""
+    path = Path(path)
+    if sandboxed and isinstance(error, (PermissionError, FileNotFoundError)):
+        return f"Kingfisher can't read files in {display_path(path.parent)}"
+    return f"Not a readable image: {path.name}"
 
 
 class KingfisherApplication(Adw.Application):
@@ -46,6 +71,7 @@ class KingfisherApplication(Adw.Application):
         self._hidden = []
         self._tray = None
         self._tray_held = False
+        self._access_note = None          # the one-time screen access note, while open
         self._host_watch = 0
         self._waiting_hold = False
 
@@ -78,11 +104,19 @@ class KingfisherApplication(Adw.Application):
         display = Gdk.Display.get_default()
         dark = style.get_dark()
         if dark and not self._dark_css_added:
-            Gtk.StyleContext.add_provider_for_display(
-                display, self._dark_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1)
+            for provider in self._dark_css:
+                Gtk.StyleContext.add_provider_for_display(
+                    display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1)
         elif not dark and self._dark_css_added:
-            Gtk.StyleContext.remove_provider_for_display(display, self._dark_css)
+            for provider in self._dark_css:
+                Gtk.StyleContext.remove_provider_for_display(display, provider)
         self._dark_css_added = dark
+
+    @staticmethod
+    def _css(name):
+        provider = Gtk.CssProvider()
+        provider.load_from_path(str(DATA_DIR / name))
+        return provider
 
     # =============================================================== startup
     def do_startup(self):
@@ -95,8 +129,12 @@ class KingfisherApplication(Adw.Application):
         provider = Gtk.CssProvider()
         provider.load_from_path(str(DATA_DIR / "style.css"))
         Gtk.StyleContext.add_provider_for_display(display, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
-        self._dark_css = Gtk.CssProvider()
-        self._dark_css.load_from_path(str(DATA_DIR / "style-dark.css"))
+        self._dark_css = [self._css("style-dark.css")]
+        if (Adw.get_major_version(), Adw.get_minor_version()) >= (1, 6):
+            # Newer libadwaita reads its colors from CSS variables only.
+            Gtk.StyleContext.add_provider_for_display(display, self._css("colors.css"),
+                                                      Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+            self._dark_css.append(self._css("colors-dark.css"))
         self._dark_css_added = False
         style = Adw.StyleManager.get_default()
         style.connect("notify::dark", self._on_dark_changed)
@@ -165,9 +203,9 @@ class KingfisherApplication(Adw.Application):
             self._wait_for_tray()
             return 0
 
-        files = options.get(GLib.OPTION_REMAINING) or []
+        files = [option_path(value) for value in options.get(GLib.OPTION_REMAINING) or []]
         if files:
-            name = files[0].decode() if isinstance(files[0], bytes) else files[0]
+            name = files[0]
             path = command_line.create_file_for_arg(name).get_path()
             if path is None:
                 self.get_window().present()
@@ -316,6 +354,9 @@ class KingfisherApplication(Adw.Application):
         live = self._live_window()
         if live is not None:
             live.stop_countdown(restore=True)
+        if not self.settings["screen_access_explained"] and needs_access_note():
+            self._explain_screen_access(lambda aside: self.start_capture(mode, delay, step_aside or aside))
+            return
         if delay:
             win = self.get_window()
             win.present()
@@ -380,10 +421,58 @@ class KingfisherApplication(Adw.Application):
             self.selector = RegionSelector(self, image, self.settings, on_done)
             return GLib.SOURCE_REMOVE
 
-        if silent_capture_available():
+        if last_capture_was_silent():
             open_selector()
         else:
             GLib.timeout_add(PORTAL_DIALOG_DELAY_MS, open_selector)
+
+    def _explain_screen_access(self, proceed):
+        """Shown once in the snap, before GNOME's screen-sharing dialog first
+        appears: what to choose in it so that GNOME does not ask again.
+
+        The note is attached to the main window, which centres it and dims the
+        window behind it, so the window comes to the front for it. The capture
+        must not include it: a window opened only for the note is closed
+        again, and one that was already open steps aside for this capture.
+
+        ``proceed(step_aside)`` starts the capture."""
+        if self._access_note is not None:
+            self._access_note.present(self.get_window())   # already open: bring it back
+            return
+        if not hasattr(Adw, "AlertDialog"):   # libadwaita before 1.5
+            self.settings["screen_access_explained"] = True
+            proceed(False)
+            return
+        dialog = Adw.AlertDialog(
+            heading="Allow Screen Access",
+            body="Kingfisher needs permission to read your screen. You only need to give it once.\n\n"
+                 "In the next window, select every screen you use, turn on "
+                 "“Remember this selection”, then click Share.")
+        dialog.add_response("cancel", "Not Now")
+        dialog.add_response("continue", "Continue")
+        dialog.set_response_appearance("continue", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("continue")
+        dialog.set_close_response("cancel")
+
+        window = self.get_window()
+        opened_for_note = not window.get_visible()
+
+        def on_response(_dialog, response):
+            self._access_note = None
+            if opened_for_note:
+                # Close rather than hide: a hidden window would keep the
+                # application running unseen when there is no top-bar icon.
+                # The capture opens a new window if it needs one.
+                window.close()
+            if response != "continue":
+                return
+            self.settings["screen_access_explained"] = True
+            # Let the note fade out before the capture starts.
+            GLib.timeout_add(HIDE_DELAY_MS, lambda: proceed(True) and False)
+        dialog.connect("response", on_response)
+        self._access_note = dialog
+        window.present()
+        dialog.present(window)
 
     def _finish_capture(self):
         if not self._capturing:
@@ -564,8 +653,8 @@ class KingfisherApplication(Adw.Application):
         try:
             with Image.open(path) as img:
                 image = ImageOps.exif_transpose(img).convert("RGB")
-        except (OSError, ValueError, Image.DecompressionBombError):
-            win.toast(f"Not a readable image: {Path(path).name}", timeout=3)
+        except (OSError, ValueError, Image.DecompressionBombError) as err:
+            win.toast(unreadable_message(path, err), timeout=5)
             return
         self.run_ocr(image, "file")
 
@@ -603,14 +692,14 @@ class KingfisherApplication(Adw.Application):
 
     # =============================================================== dialogs
     def show_preferences(self):
-        from .preferences import PreferencesWindow  # loaded on demand
+        from .preferences import PreferencesWindow
         PreferencesWindow(self, self.get_window()).present()
 
     # Swappable so tests can use a fake; None means "no PackageKit here".
     software_installer = staticmethod(PackageKitInstaller.create)
 
     def show_languages(self, parent=None):
-        from .language_window import LanguagesWindow  # loaded on demand
+        from .language_window import LanguagesWindow
         if getattr(self, "_languages", None) is not None and self._languages.get_application() is not None:
             self._languages.present()
             return

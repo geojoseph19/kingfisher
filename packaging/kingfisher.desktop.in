@@ -2,7 +2,7 @@
 Type=Application
 Name=Kingfisher
 GenericName=Screen Text Extractor
-Comment=Select any part of the screen and extract its text, fully offline
+Comment=Copy text from anything on your screen
 Icon=@APP_ID@
 Exec=@EXEC@ %F
 Terminal=false

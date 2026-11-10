@@ -9,7 +9,7 @@ from pathlib import Path
 
 from gi.repository import GLib
 
-from . import APP_ID
+from . import APP_ID, IS_SNAP
 
 AUTOSTART_FILE = Path(GLib.get_user_config_dir()) / "autostart" / f"{APP_ID}.desktop"
 
@@ -36,6 +36,11 @@ def exec_value(args):
 
 
 def _command():
+    if IS_SNAP:
+        # Inside the snap this file lands in ~/snap/kingfisher/current/.config/autostart.
+        # snapd reads it at login through the app's "autostart" key and runs the
+        # snap's own command with these arguments; the program name is ignored.
+        return exec_value(["kingfisher", "--background"])
     launcher = os.environ.get("KINGFISHER_LAUNCHER") or shutil.which("kingfisher")
     if launcher:
         args = [launcher, "--background"]

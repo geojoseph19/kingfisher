@@ -4,7 +4,7 @@
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from . import autostart, codes, display_path, shortcut
+from . import IS_SNAP, autostart, capture, codes, display_path, screencast, shortcut
 from .history import MAX_ENTRIES
 from .install_button import InstallButton
 from .ocr import USER_TESSDATA, language_name
@@ -120,11 +120,20 @@ class PreferencesWindow(Adw.PreferencesWindow):
                              self.settings["quick_mode"],
                              lambda v: self.settings.__setitem__("quick_mode", v)))
         if not shortcut.supported():
-            group.set_sensitive(False)
-            group.set_description("GNOME custom shortcuts are not available on this desktop.")
+            # "After selecting" stays usable: it also applies to a shortcut
+            # added by hand that runs "kingfisher --capture".
+            self.shortcut_row.set_sensitive(False)
+            self.binding_row.set_sensitive(False)
+            group.set_description(shortcut.unavailable_reason())
         self.shortcut_switch.set_active(shortcut.is_enabled())
         self.shortcut_switch.connect("notify::active", self._on_shortcut_toggled)
         page.add(group)
+
+        # ---------------------------------------------------- screen access
+        if IS_SNAP:
+            access = self._screen_access_group()
+            if access is not None:
+                page.add(access)
 
         # ------------------------------------------------------ recognition
         group = Adw.PreferencesGroup(title="Recognition")
@@ -207,6 +216,41 @@ class PreferencesWindow(Adw.PreferencesWindow):
         best.add_suffix(open_folder)
         group.add(best)
         page.add(group)
+
+    def _screen_access_group(self):
+        """Snap only: how Kingfisher may read the screen, and a way to take
+        a remembered screen-sharing choice back."""
+        route = capture.sandbox_route()
+        if route == "x11":
+            return None
+        group = Adw.PreferencesGroup(title="Screen Access")
+        if route == "screenshot":
+            row = Adw.ActionRow(title="Screenshot permission",
+                                subtitle="Kingfisher asks once for permission to take screenshots. "
+                                         "To change your answer, see “Screen access” in the README.")
+            row.set_subtitle_lines(3)
+            group.add(row)
+            return group
+        row = Adw.ActionRow(title="Remembered screen selection")
+        row.set_subtitle_lines(3)
+        forget = Gtk.Button(label="Forget", valign=Gtk.Align.CENTER)
+
+        def refresh():
+            remembered = screencast.has_token()
+            row.set_subtitle("Kingfisher can read the screen without asking each time." if remembered
+                             else "Kingfisher will ask for permission at the next capture.")
+            forget.set_sensitive(remembered)
+
+        def on_forget(_button):
+            screencast.forget()
+            self.app.settings["screen_access_explained"] = False
+            refresh()
+            self._toast("Kingfisher will ask for screen access at the next capture.")
+        forget.connect("clicked", on_forget)
+        row.add_suffix(forget)
+        refresh()
+        group.add(row)
+        return group
 
     def _open_models_folder(self):
         try:

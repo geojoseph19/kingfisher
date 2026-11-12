@@ -1,20 +1,14 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/banner-dark.png">
-    <img src="docs/banner-light.png" alt="The Kingfisher app icon and name over a calm lake, with the line: Copy text from anything on your screen" width="100%">
-  </picture>
+  <img src="docs/banner-light.png#gh-light-mode-only" alt="The Kingfisher app icon and name over a calm lake, with the line: Copy text from anything on your screen" width="100%">
+  <img src="docs/banner-dark.png#gh-dark-mode-only" alt="The Kingfisher app icon and name over a calm lake, with the line: Copy text from anything on your screen" width="100%">
 </p>
 
 <div align="center">
 
 **Dive into your screen, come up with text.**
 
-<a href="https://snapcraft.io/kingfisher">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://snapcraft.io/en/light/install.svg">
-    <img src="https://snapcraft.io/en/dark/install.svg" height="48" alt="Get it from the Snap Store">
-  </picture>
-</a>
+<a href="https://snapcraft.io/kingfisher#gh-light-mode-only"><img src="https://snapcraft.io/en/dark/install.svg" height="48" alt="Get it from the Snap Store"></a>
+<a href="https://snapcraft.io/kingfisher#gh-dark-mode-only"><img src="https://snapcraft.io/en/light/install.svg" height="48" alt="Get it from the Snap Store"></a>
 
 [Install](#install) · [Features](#features) · [Usage](#usage) · [Languages](#languages) · [Privacy](#privacy) · [Development](#development)
 

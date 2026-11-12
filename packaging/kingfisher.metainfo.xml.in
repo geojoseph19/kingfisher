@@ -13,7 +13,10 @@
       Kingfisher reads the text in anything you can see: a video, a photo, a scanned PDF, an error message.
       Press a shortcut, select the text, and it is on your clipboard, ready to paste.
     </p>
-    <p>Everything happens on your computer, so what you capture stays private.</p>
+    <p>
+      The text is read on your computer, without an internet connection, so private documents never leave it.
+      Kingfisher is free and open source.
+    </p>
     <ul>
       <li>Precise area selection on any monitor</li>
       <li>Read the whole screen, image files and images on the clipboard</li>

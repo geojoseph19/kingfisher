@@ -8,6 +8,14 @@
 
 Copy text from anything on your screen. Built for GNOME on Ubuntu.
 
+<a href="https://snapcraft.io/kingfisher">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://snapcraft.io/en/light/install.svg">
+    <img src="https://snapcraft.io/en/dark/install.svg" height="48" alt="Get it from the Snap Store">
+  </picture>
+</a>
+
+[![Snap Store version](https://snapcraft.io/kingfisher/badge.svg)](https://snapcraft.io/kingfisher)
 [![CI](https://github.com/geojoseph19/kingfisher/actions/workflows/ci.yml/badge.svg)](https://github.com/geojoseph19/kingfisher/actions/workflows/ci.yml)
 [![License: GPL v3 or later](https://img.shields.io/badge/license-GPL--3.0--or--later-1b6fe0.svg)](LICENSE)
 ![Ubuntu 22.04+](https://img.shields.io/badge/Ubuntu-22.04%2B-E95420?logo=ubuntu&logoColor=white)
@@ -84,7 +92,7 @@ Add the languages you read from the Languages window. Your system's languages ar
 
 ### Snap Store
 
-Find Kingfisher in Ubuntu's App Center, or run:
+Find Kingfisher in Ubuntu's App Center or on [its Snap Store page](https://snapcraft.io/kingfisher), or run:
 
 ```bash
 sudo snap install kingfisher

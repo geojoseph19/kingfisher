@@ -1,12 +1,13 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/banner-dark.png">
+    <img src="docs/banner-light.png" alt="The Kingfisher app icon and name over a calm lake, with the line: Copy text from anything on your screen" width="100%">
+  </picture>
+</p>
+
 <div align="center">
 
-<img src="kingfisher/data/icons/hicolor/scalable/apps/kingfisher.svg" width="112" alt="Kingfisher app icon">
-
-# Kingfisher
-
 **Dive into your screen, come up with text.**
-
-Copy text from anything on your screen. Built for GNOME on Ubuntu.
 
 <a href="https://snapcraft.io/kingfisher">
   <picture>
@@ -15,19 +16,15 @@ Copy text from anything on your screen. Built for GNOME on Ubuntu.
   </picture>
 </a>
 
+[Install](#install) · [Features](#features) · [Usage](#usage) · [Languages](#languages) · [Privacy](#privacy) · [Development](#development)
+
 [![Snap Store version](https://snapcraft.io/kingfisher/badge.svg)](https://snapcraft.io/kingfisher)
 [![CI](https://github.com/geojoseph19/kingfisher/actions/workflows/ci.yml/badge.svg)](https://github.com/geojoseph19/kingfisher/actions/workflows/ci.yml)
 [![License: GPL v3 or later](https://img.shields.io/badge/license-GPL--3.0--or--later-1b6fe0.svg)](LICENSE)
 ![Ubuntu 22.04+](https://img.shields.io/badge/Ubuntu-22.04%2B-E95420?logo=ubuntu&logoColor=white)
 ![GTK 4 and libadwaita](https://img.shields.io/badge/GTK%204-libadwaita-4A86CF?logo=gnome&logoColor=white)
 
-[Install](#install) · [Features](#features) · [Usage](#usage) · [Languages](#languages) · [Privacy](#privacy) · [Development](#development)
-
 </div>
-
-<p align="center">
-  <img src="docs/screenshots/hero.png" alt="The Kingfisher start page in light and dark mode: a lake at dawn and at night, with buttons for Select Area, Full Screen, Open and Paste, and a list of recent results" width="100%">
-</p>
 
 Kingfisher reads the text in anything you can see: a video, a photo, a scanned PDF, an error message. Press a shortcut, select the text, and it is on your clipboard, ready to paste. Everything happens on your computer.
 
@@ -59,7 +56,7 @@ The text is copied as soon as it is read. Links, email addresses, phone numbers 
 ### Light and dark
 
 <p align="center">
-  <img src="docs/screenshots/reading.png" alt="Kingfisher in dark mode, reading a capture over a lake at night" width="100%">
+  <img src="docs/screenshots/hero.png" alt="The Kingfisher start page in light and dark mode: a lake at dawn and at night, with buttons for Select Area, Full Screen, Open and Paste, and a list of recent results" width="100%">
 </p>
 
 Kingfisher follows your system's light or dark style, or lets you choose one.

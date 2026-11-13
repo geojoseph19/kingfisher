@@ -43,6 +43,12 @@ def pil_to_surface(image):
     return surface, data
 
 
+def covers(rect, width, height):
+    """Whether ``rect`` (x, y, w, h) takes up a whole ``width`` x ``height`` window."""
+    x, y, w, h = rect
+    return x <= 0 and y <= 0 and x + w >= width and y + h >= height
+
+
 class RegionSelector:
     """Coordinates the per-monitor overlay windows."""
 
@@ -168,6 +174,7 @@ class OverlayWindow(Gtk.Window):
         self.index = index
         self.geom = geom
         self.sel = None          # (x, y, w, h) in logical window coords
+        self.reading = None      # while busy: the area being read, if it is on this screen
         self.state = "idle"      # idle | drawing | moving | resizing | busy
         self.handle = None
         self.pointer = None
@@ -344,6 +351,7 @@ class OverlayWindow(Gtk.Window):
 
     def set_busy(self, active, rect):
         self.state = "busy"
+        self.reading = tuple(rect) if active else None
         self.revealer.set_reveal_child(False)
         self.panel.set_visible(False)
         self.area.set_cursor(Gdk.Cursor.new_from_name("wait" if active else "default"))
@@ -532,29 +540,37 @@ class OverlayWindow(Gtk.Window):
     def _draw(self, _area, cr, width, height):
         self._paint_backdrop(cr)
 
-        if self.selector.mode == "screen" and self.state != "busy":
+        busy = self.state == "busy"
+        # While reading, mark the area that is being read. That is not always
+        # the selection: Screen mode reads everything and leaves an earlier
+        # selection where it was, and the selection may be on another screen.
+        region = self.reading if busy else self.sel
+        whole = busy and region is not None and covers(region, width, height)
+        if whole or (self.selector.mode == "screen" and not busy):
             cr.set_source_rgba(*WHITE, 0.9)
             cr.set_line_width(4)
             cr.rectangle(2, 2, width - 4, height - 4)
             cr.stroke()
+            if whole:
+                self._draw_scan(cr, 0, 0, width, height)
             return
 
         cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
         cr.rectangle(0, 0, width, height)
-        if self.sel:
-            cr.rectangle(*self.sel)
+        if region:
+            cr.rectangle(*region)
         cr.set_source_rgba(0, 0, 0, DIM)
         cr.fill()
         cr.set_fill_rule(cairo.FILL_RULE_WINDING)
 
-        if self.sel:
-            self._draw_selection(cr, width)
+        if region:
+            self._draw_selection(cr, width, region)
 
         if self._loupe_visible():
             self._draw_loupe(cr, width, height)
 
-    def _draw_selection(self, cr, width):
-        x, y, w, h = self.sel
+    def _draw_selection(self, cr, width, rect):
+        x, y, w, h = rect
         # Hairline frame with a soft dark outer line so it reads on any backdrop.
         cr.set_line_width(1)
         cr.set_source_rgba(0, 0, 0, 0.35)

@@ -189,19 +189,12 @@ Turn on only the languages you need: each one makes reading a little slower.
 
 The Ubuntu package captures through `gnome-screenshot`, which GNOME lets take screenshots without asking.
 
-The snap runs in a sandbox, so GNOME asks you once, the first time you capture:
+The snap runs in a sandbox, so it needs your permission, which you give once, the first time you capture. Nothing has to be set up beforehand.
 
-- **Ubuntu 24.04 and later:** "Allow Kingfisher to Take Screenshots?" Choose **Allow**. To change your answer later, run the command below and capture again.
-
-  ```bash
-  gdbus call --session --dest org.freedesktop.impl.portal.PermissionStore \
-    --object-path /org/freedesktop/impl/portal/PermissionStore \
-    --method org.freedesktop.impl.portal.PermissionStore.DeletePermission \
-    screenshot screenshot snap.kingfisher
-  ```
-
-- **Ubuntu 22.04:** a screen-sharing dialog. Select your screen (all of them, if you have several), turn on **Remember this selection** and choose **Share**. Kingfisher then reads the screen for a moment at each capture, without asking again. GNOME may show its screen-sharing indicator briefly. To withdraw the permission, choose **Preferences › Screen Access › Forget**. If you connect a different monitor, GNOME asks again once.
+- **Wayland sessions** (the default on Ubuntu): Kingfisher tells you what comes next, then GNOME's screen-sharing dialog opens. Select your screen (all of them, if you have several), turn on **Remember this selection** and choose **Share**. Kingfisher then reads the screen for a moment at each capture, without asking again. GNOME may show its screen-sharing indicator briefly. To withdraw the permission, choose **Preferences › Screen Access › Forget**. If you connect a different monitor, GNOME asks again once.
 - **Xorg sessions** ("Ubuntu on Xorg"): no permission is needed.
+
+Some desktops ask "Allow Kingfisher to Take Screenshots?" instead. Choose **Allow**. If you choose **Deny**, Kingfisher offers the screen-sharing dialog instead. GNOME on Ubuntu 24.04 cannot show that question for snaps, so Kingfisher goes to the screen-sharing dialog directly.
 
 Kingfisher reads the screen only when you start a capture, and the picture never leaves your computer.
 

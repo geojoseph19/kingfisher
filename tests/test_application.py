@@ -11,6 +11,7 @@ gi.require_version("Adw", "1")
 
 from kingfisher import application  # noqa: E402
 from kingfisher.application import option_path, unreadable_message  # noqa: E402
+from kingfisher.capture import CaptureFailure  # noqa: E402
 
 
 class OptionPathTests(unittest.TestCase):
@@ -87,6 +88,43 @@ class ScreenAccessNoteTests(unittest.TestCase):
         window.close.assert_not_called()
         proceed.assert_called_once_with(True)
         self.assertTrue(app.settings["screen_access_explained"])
+
+
+class AccessNeededTests(unittest.TestCase):
+    """A capture the desktop refused without asking starts again, this time
+    with the note and the screen-sharing dialog, instead of ending in an error."""
+
+    def captured(self, error, was_visible, **extra):
+        window = mock.Mock()
+        app = mock.Mock()
+        app.get_window.return_value = window
+        application.KingfisherApplication._on_captured(app, None, error, "area", was_visible, **extra)
+        return app, window
+
+    def test_capture_from_the_window_starts_again(self):
+        error = CaptureFailure("refused", retryable=False, needs_access=True)
+        app, window = self.captured(error, was_visible=True)
+        app._finish_capture.assert_called_once()
+        window.present.assert_called_once()        # the note belongs on an open window
+        window.toast.assert_not_called()
+        app.start_capture.assert_called_once_with("area", delay=0, step_aside=True)
+
+    def test_capture_from_the_shortcut_starts_again(self):
+        error = CaptureFailure("refused", retryable=False, needs_access=True)
+        app, window = self.captured(error, was_visible=False)
+        window.present.assert_not_called()
+        app.start_capture.assert_called_once_with("area", delay=0, step_aside=False)
+
+    def test_a_countdown_runs_again_after_access_is_given(self):
+        error = CaptureFailure("refused", retryable=False, needs_access=True)
+        app, _window = self.captured(error, was_visible=True, counted_down=3)
+        app.start_capture.assert_called_once_with("area", delay=3, step_aside=True)
+
+    def test_other_errors_are_shown(self):
+        error = CaptureFailure("refused", retryable=False, refused=True)
+        app, window = self.captured(error, was_visible=True)
+        app.start_capture.assert_not_called()
+        window.toast.assert_called_once()
 
 
 if __name__ == "__main__":

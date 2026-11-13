@@ -15,6 +15,13 @@ the session (see ``sandbox_route``): a direct grab on X11; on Wayland the
 Screenshot portal where it asks only once (xdg-desktop-portal 1.15 and
 later), otherwise the ScreenCast portal with a remembered selection
 (``screencast.py``). Either way the user is asked once, not on every capture.
+
+The Screenshot portal's question is not shown everywhere, though. GNOME Shell
+only shows it for the focused application and compares the portal's name for
+the app ("snap.kingfisher") with its own ("kingfisher_kingfisher"), which
+never match for a snap, so on Ubuntu 24.04 the portal refuses at once without
+asking anything. A refusal therefore moves the capture to the ScreenCast
+route, which has a dialog of its own (``_capture_sandboxed``).
 """
 
 import itertools
@@ -48,17 +55,27 @@ ROUTES = ("x11", "screenshot", "screencast")
 PORTAL_NAME = re.compile(r"^Screenshot(-\d+)?\.png$")
 
 
+REFUSED_MESSAGE = "This desktop did not allow Kingfisher to read the screen."
+
+
 class CaptureError(Exception):
     pass
 
 
 class CaptureFailure(str):
-    """Error message passed to callbacks; ``retryable`` is False when the
-    user explicitly cancelled."""
+    """Error message passed to callbacks.
 
-    def __new__(cls, message, retryable=True):
+    ``retryable``: False when trying again at once cannot help (the user
+    cancelled, or the desktop refused).
+    ``refused``: the Screenshot portal turned the request down.
+    ``needs_access``: nothing was captured because screen access has to be
+    asked for first; start the capture again and it will be."""
+
+    def __new__(cls, message, retryable=True, refused=False, needs_access=False):
         obj = super().__new__(cls, message)
         obj.retryable = retryable
+        obj.refused = refused
+        obj.needs_access = needs_access
         return obj
 
 
@@ -72,6 +89,7 @@ def silent_capture_available():
 
 _last_silent = False
 _remembers_screenshots = None
+_refused = False          # the Screenshot portal refused during this run
 
 
 def last_capture_was_silent():
@@ -132,13 +150,15 @@ def portal_remembers_screenshots():
     return _remembers_screenshots
 
 
-def choose_route(forced, x11, remembers_screenshots, screencast_works):
+def choose_route(forced, x11, remembers_screenshots, screencast_works, screenshots_refused=False):
     """The capture route for the sandbox; kept pure so it can be tested."""
     if forced in ROUTES:
         return forced
     if x11:
         return "x11"
-    if remembers_screenshots or not screencast_works:
+    if not screencast_works:
+        return "screenshot"
+    if remembers_screenshots and not screenshots_refused:
         return "screenshot"
     return "screencast"
 
@@ -149,9 +169,13 @@ def sandbox_route():
     forced = os.environ.get("KINGFISHER_CAPTURE")
     if forced in ROUTES:
         return forced
-    x11 = x11_session()
-    remembers = not x11 and portal_remembers_screenshots()
-    return choose_route(None, x11, remembers, not x11 and not remembers and screencast.available())
+    if x11_session():
+        return "x11"
+    remembers = portal_remembers_screenshots()
+    refused = screenshots_refused()
+    # GStreamer is only loaded when the ScreenCast route is a candidate.
+    screencast_works = (refused or not remembers) and screencast.available()
+    return choose_route(None, False, remembers, screencast_works, refused)
 
 
 def needs_access_note():
@@ -159,6 +183,31 @@ def needs_access_note():
     the first time, which needs a word of explanation beforehand."""
     return IS_SNAP and not silent_capture_available() and sandbox_route() == "screencast" \
         and not screencast.has_token()
+
+
+def access_state():
+    """For Preferences, inside the snap: "open" when no permission is needed
+    (X11), "granted" when captures run without a question, "ask" when the
+    next capture asks first."""
+    route = sandbox_route()
+    if route == "x11":
+        return "open"
+    if route == "screencast":
+        return "granted" if screencast.has_token() else "ask"
+    return "granted" if screenshot_allowed_marker().exists() else "ask"
+
+
+def reset_access():
+    """Forget everything remembered about screen access, so that the next
+    capture starts from the beginning and asks again."""
+    global _refused
+    _refused = False
+    screencast.forget()
+    for marker in (screenshot_allowed_marker(), screenshot_refused_marker()):
+        try:
+            marker.unlink(missing_ok=True)
+        except OSError:
+            pass
 
 
 def _capture_sandboxed(callback):
@@ -173,23 +222,69 @@ def _capture_sandboxed(callback):
             return
         route = "screencast" if screencast.available() else "screenshot"
     if route == "screencast":
-        def on_done(image, error, cancelled):
-            if image is not None:
-                callback(image, None)
-            elif cancelled:
-                callback(None, CaptureFailure(error, retryable=False))
-            else:
-                # Anything else (no PipeWire, a refused session): ask the
-                # Screenshot portal instead.
-                _capture_portal(callback)
-        screencast.capture(on_done)
+        _capture_screencast(callback)
         return
-    _capture_portal_once_asked(callback)
+
+    def on_screenshot(image, error):
+        if image is not None or not getattr(error, "refused", False):
+            callback(image, error)
+            return
+        # Refused: without a question (see the module docstring), or because
+        # "Deny" was chosen. The two cannot be told apart reliably (timing
+        # says little on a slow machine), and the way on is the same.
+        _remember_refusal()
+        if sandbox_route() != "screencast":
+            callback(None, error)   # there is no other route
+        elif screencast.has_token():
+            _capture_screencast(callback)
+        else:
+            # The ScreenCast route asks properly, after a word of
+            # explanation that only the application can give.
+            callback(None, CaptureFailure(str(error), retryable=False, needs_access=True))
+    _capture_portal_once_asked(on_screenshot)
+
+
+def _capture_screencast(callback):
+    def on_done(image, error, cancelled):
+        if image is not None:
+            callback(image, None)
+        elif cancelled:
+            callback(None, CaptureFailure(error, retryable=False))
+        elif screenshots_refused():
+            # The Screenshot portal has already said no; its answer would
+            # only hide what went wrong here.
+            callback(None, CaptureFailure(error or "Could not read the screen.", retryable=False))
+        else:
+            # Anything else (no PipeWire, a refused session): ask the
+            # Screenshot portal instead.
+            _capture_portal(callback)
+    screencast.capture(on_done)
 
 
 def screenshot_allowed_marker():
     """Present once a Screenshot portal capture has succeeded."""
     return screencast.state_dir() / "screenshot-allowed"
+
+
+def screenshot_refused_marker():
+    """Present once the Screenshot portal has refused, so that later captures
+    go straight to the ScreenCast route."""
+    return screencast.state_dir() / "screenshot-refused"
+
+
+def screenshots_refused():
+    return _refused or screenshot_refused_marker().exists()
+
+
+def _remember_refusal():
+    global _refused
+    _refused = True   # holds for this run even if the marker cannot be written
+    marker = screenshot_refused_marker()
+    try:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.touch()
+    except OSError:
+        pass
 
 
 def _capture_portal_once_asked(callback):
@@ -331,10 +426,9 @@ def _capture_portal(callback):
                 # The user cancelled the "Share screenshot" dialog.
                 finish(None, CaptureFailure("Screen capture was cancelled.", retryable=False))
             elif IS_SNAP and portal_remembers_screenshots():
-                # Most likely "Deny" was chosen once; the portal remembers it.
-                finish(None, CaptureFailure("Kingfisher is not allowed to take screenshots. "
-                                            "See “Screen access” in the README to allow it.",
-                                            retryable=False))
+                # "Deny" was chosen, now or earlier, or the desktop refused
+                # without asking. Trying again gives the same answer.
+                finish(None, CaptureFailure(REFUSED_MESSAGE, retryable=False, refused=True))
             else:
                 finish(None, CaptureFailure("Screen capture was cancelled."))
             return

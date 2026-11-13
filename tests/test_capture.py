@@ -93,6 +93,12 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(choose("screencast", True, True, False), "screencast")
         self.assertEqual(choose("bogus", True, False, False), "x11")
 
+    def test_refused_screenshots_move_to_screen_sharing(self):
+        choose = capture.choose_route
+        self.assertEqual(choose(None, False, True, True, True), "screencast")
+        self.assertEqual(choose(None, False, True, False, True), "screenshot")   # nothing else to use
+        self.assertEqual(choose("screenshot", False, True, True, True), "screenshot")
+
     def test_x11_session(self):
         with mock.patch.dict("os.environ", {"DISPLAY": ":0"}, clear=True):
             self.assertTrue(capture.x11_session())
@@ -106,6 +112,14 @@ class RouteTests(unittest.TestCase):
 
 class SandboxedCaptureTests(unittest.TestCase):
     """Which route runs and what reaches the app, with the routes faked."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        for patcher in (mock.patch.object(capture.screencast, "state_dir", return_value=Path(tmp.name)),
+                        mock.patch.object(capture, "_refused", False)):
+            patcher.start()
+            self.addCleanup(patcher.stop)
 
     def capture(self, route, screencast_result=None, x11_image=None):
         results, portal = [], []
@@ -146,6 +160,137 @@ class SandboxedCaptureTests(unittest.TestCase):
         self.assertFalse(portal)
         self.assertEqual(len(results), 1)
         self.assertFalse(results[0][1].retryable)
+
+    def test_screencast_failure_is_reported_once_screenshots_are_refused(self):
+        capture._remember_refusal()
+        results, portal = self.capture("screencast", screencast_result=(None, "No screen was shared.", False))
+        self.assertFalse(portal)
+        self.assertEqual(results, [(None, "No screen was shared.")])
+        self.assertFalse(results[0][1].retryable)
+
+
+class RefusedScreenshotTests(unittest.TestCase):
+    """Ubuntu 24.04: GNOME Shell refuses the Screenshot portal's question for
+    a snap, so the portal says no without the user having seen anything."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.state = Path(tmp.name)
+        for patcher in (mock.patch.object(capture.screencast, "state_dir", return_value=self.state),
+                        mock.patch.object(capture, "_refused", False),
+                        mock.patch.dict("os.environ", {"WAYLAND_DISPLAY": "wayland-0"}),
+                        mock.patch.object(capture, "x11_session", return_value=False),
+                        mock.patch.object(capture, "IS_SNAP", True),
+                        mock.patch.object(capture, "silent_capture_available", return_value=False),
+                        mock.patch.object(capture, "portal_remembers_screenshots", return_value=True)):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        capture.os.environ.pop("KINGFISHER_CAPTURE", None)   # restored with the environment patch
+        patcher = mock.patch.object(capture.screencast, "available", return_value=True)
+        self.screencast_available = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def capture(self, elapsed=0.01, screencast_works=True, screencast_result=None, portal_image=None):
+        """One capture; the Screenshot portal answers after ``elapsed`` seconds."""
+        results, portal_calls, cast_calls = [], [], []
+        clock = [100.0]
+
+        def fake_portal(cb):
+            portal_calls.append(cb)
+            clock[0] += elapsed
+            if portal_image is not None:
+                cb(portal_image, None)
+            else:
+                cb(None, capture.CaptureFailure(capture.REFUSED_MESSAGE, retryable=False, refused=True))
+
+        def fake_cast(cb):
+            cast_calls.append(cb)
+            cb(*screencast_result)
+
+        self.screencast_available.return_value = screencast_works
+        with mock.patch.object(capture, "_capture_portal", side_effect=fake_portal), \
+                mock.patch.object(capture.screencast, "capture", side_effect=fake_cast), \
+                mock.patch.object(capture.time, "monotonic", side_effect=lambda: clock[0]):
+            capture.capture_screen(lambda image, error: results.append((image, error)))
+            route = capture.sandbox_route()
+        return results, len(portal_calls), len(cast_calls), route
+
+    def test_silent_refusal_asks_for_access_instead_of_failing(self):
+        results, portal, cast, route = self.capture()
+        self.assertEqual((portal, cast), (1, 0))
+        (image, error), = results
+        self.assertIsNone(image)
+        self.assertTrue(error.needs_access)
+        self.assertFalse(error.retryable)
+        # From now on, and after a restart, the capture uses screen sharing.
+        self.assertEqual(route, "screencast")
+        self.assertTrue(capture.screenshot_refused_marker().exists())
+        with mock.patch.object(capture.screencast, "has_token", return_value=False):
+            self.assertTrue(capture.needs_access_note())
+
+    def test_next_capture_goes_straight_to_screen_sharing(self):
+        self.capture()
+        image = Image.new("RGB", (4, 4))
+        results, portal, cast, _route = self.capture(screencast_result=(image, None, False))
+        self.assertEqual((portal, cast), (0, 1))
+        self.assertEqual(results, [(image, None)])
+
+    def test_refusal_holds_when_the_marker_cannot_be_written(self):
+        # Otherwise the application would start the same capture forever.
+        with mock.patch.object(capture.Path, "touch", side_effect=PermissionError):
+            _results, _portal, _cast, route = self.capture()
+        self.assertFalse(capture.screenshot_refused_marker().exists())
+        self.assertEqual(route, "screencast")
+
+    def test_remembered_selection_is_used_at_once(self):
+        image = Image.new("RGB", (4, 4))
+        with mock.patch.object(capture.screencast, "has_token", return_value=True):
+            results, portal, cast, _route = self.capture(screencast_result=(image, None, False))
+        self.assertEqual((portal, cast), (1, 1))
+        self.assertEqual(results, [(image, None)])
+
+    def test_slow_refusal_is_treated_the_same(self):
+        # A slow machine, or "Deny" chosen in a dialog: never a dead end.
+        results, portal, cast, route = self.capture(elapsed=6.0)
+        self.assertEqual((portal, cast), (1, 0))
+        self.assertTrue(results[0][1].needs_access)
+        self.assertEqual(route, "screencast")
+
+    def test_without_screen_sharing_the_refusal_is_final(self):
+        results, portal, cast, route = self.capture(screencast_works=False)
+        self.assertEqual((portal, cast), (1, 0))
+        (_image, error), = results
+        self.assertFalse(error.needs_access)
+        self.assertFalse(error.retryable)
+        self.assertEqual(route, "screenshot")
+
+    def test_forced_route_cannot_loop(self):
+        with mock.patch.dict("os.environ", {"KINGFISHER_CAPTURE": "screenshot"}):
+            results, _portal, cast, _route = self.capture()
+        self.assertEqual(cast, 0)
+        self.assertFalse(results[0][1].needs_access)
+
+    def test_allowed_screenshots_are_untouched(self):
+        image = Image.new("RGB", (4, 4))
+        results, portal, cast, route = self.capture(portal_image=image)
+        self.assertEqual((portal, cast, route), (1, 0, "screenshot"))
+        self.assertEqual(results, [(image, None)])
+        self.assertFalse(capture.screenshots_refused())
+        self.assertEqual(capture.access_state(), "granted")
+
+    def test_message_names_no_document(self):
+        self.assertNotIn("README", capture.REFUSED_MESSAGE)
+
+    def test_reset_starts_over(self):
+        self.capture()
+        capture.screencast.save_token("token")
+        self.assertEqual(capture.access_state(), "granted")
+        capture.reset_access()
+        self.assertFalse(capture.screenshots_refused())
+        self.assertFalse(capture.screencast.has_token())
+        self.assertEqual(capture.sandbox_route(), "screenshot")
+        self.assertEqual(capture.access_state(), "ask")
 
 
 class RetakeTests(unittest.TestCase):

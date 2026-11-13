@@ -218,31 +218,25 @@ class PreferencesWindow(Adw.PreferencesWindow):
         page.add(group)
 
     def _screen_access_group(self):
-        """Snap only: how Kingfisher may read the screen, and a way to take
-        a remembered screen-sharing choice back."""
-        route = capture.sandbox_route()
-        if route == "x11":
-            return None
+        """Snap only: whether Kingfisher may read the screen, and a way to
+        take a remembered screen-sharing choice back."""
+        if capture.access_state() == "open":
+            return None   # X11: nothing to ask for
         group = Adw.PreferencesGroup(title="Screen Access")
-        if route == "screenshot":
-            row = Adw.ActionRow(title="Screenshot permission",
-                                subtitle="Kingfisher asks once for permission to take screenshots. "
-                                         "To change your answer, see “Screen access” in the README.")
-            row.set_subtitle_lines(3)
-            group.add(row)
-            return group
-        row = Adw.ActionRow(title="Remembered screen selection")
+        row = Adw.ActionRow(title="Permission to read the screen")
         row.set_subtitle_lines(3)
         forget = Gtk.Button(label="Forget", valign=Gtk.Align.CENTER)
 
         def refresh():
-            remembered = screencast.has_token()
-            row.set_subtitle("Kingfisher can read the screen without asking each time." if remembered
-                             else "Kingfisher will ask for permission at the next capture.")
-            forget.set_sensitive(remembered)
+            granted = capture.access_state() == "granted"
+            row.set_subtitle("Given. Kingfisher reads the screen only when you start a capture." if granted
+                             else "Kingfisher will ask at the next capture.")
+            # A permission kept by the desktop itself (the Screenshot portal)
+            # cannot be taken back from inside the sandbox.
+            forget.set_visible(screencast.has_token())
 
         def on_forget(_button):
-            screencast.forget()
+            capture.reset_access()
             self.app.settings["screen_access_explained"] = False
             refresh()
             self._toast("Kingfisher will ask for screen access at the next capture.")

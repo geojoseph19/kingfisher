@@ -333,13 +333,16 @@ class KingfisherApplication(Adw.Application):
             self._update_tray()
 
     # =============================================================== capture
-    def start_capture(self, mode, delay=0, step_aside=True):
+    def start_capture(self, mode, delay=0, step_aside=True, counted_down=0):
         """mode: "area" (interactive selection) or "screen" (whole screen).
 
         ``step_aside``: hide Kingfisher's windows first. Right when the capture
         starts from inside Kingfisher (its window would cover what you want);
         wrong for the system shortcut or the top-bar icon, which must capture
         the screen exactly as it is, Kingfisher included.
+
+        ``counted_down``: the countdown that has just run for this capture,
+        so that it can run again if screen access must be asked for first.
         """
         if self._capturing and self.selector is not None and not self.selector.alive():
             # The overlay was closed behind the selector's back: start over.
@@ -360,7 +363,7 @@ class KingfisherApplication(Adw.Application):
         if delay:
             win = self.get_window()
             win.present()
-            win.start_countdown(delay, lambda: self.start_capture(mode))
+            win.start_countdown(delay, lambda: self.start_capture(mode, counted_down=delay))
             return
 
         self._capturing = True
@@ -377,15 +380,24 @@ class KingfisherApplication(Adw.Application):
                 if error and retries and getattr(error, "retryable", False):
                     GLib.timeout_add(400, grab, retries - 1)
                 else:
-                    self._on_captured(image, error, mode, was_visible)
+                    self._on_captured(image, error, mode, was_visible, counted_down)
             capture_screen(on_result)
             return GLib.SOURCE_REMOVE
 
         GLib.timeout_add(HIDE_DELAY_MS if was_visible else 60, grab, 1)
 
-    def _on_captured(self, image, error, mode, was_visible):
+    def _on_captured(self, image, error, mode, was_visible, counted_down=0):
         if error:
             self._finish_capture()
+            if getattr(error, "needs_access", False):
+                # The desktop refused its screenshot permission, usually
+                # without asking the user anything. The capture has switched
+                # to screen sharing, which does ask: start again, beginning
+                # with the note that explains it.
+                if was_visible:
+                    self.get_window().present()
+                self.start_capture(mode, delay=counted_down, step_aside=was_visible)
+                return
             if was_visible or getattr(error, "retryable", True):
                 win = self.get_window()
                 win.present()

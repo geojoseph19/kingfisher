@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.2 - 2026-11-13
+
+### Fixed
+
+- Snap on Ubuntu 24.04: capturing failed with "Kingfisher is not allowed to take
+  screenshots" and no permission was ever asked for. GNOME cannot show its screenshot
+  question for snaps and refuses instead; Kingfisher now asks through the screen-sharing
+  dialog, once, as it does on Ubuntu 22.04
+- Denying the screenshot permission is no longer a dead end: Kingfisher offers the
+  screen-sharing dialog instead
+- Messages and Preferences no longer send you to the README. **Preferences › Screen Access**
+  shows whether permission has been given
+
 ## 1.0.1 - 2026-11-10
 
 First release on the Snap Store.

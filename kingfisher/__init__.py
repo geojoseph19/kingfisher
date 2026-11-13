@@ -10,7 +10,7 @@ from pathlib import Path
 # the AppStream ID derive from it. Every installer and template reads it here.
 APP_ID = "io.github.geojoseph19.Kingfisher"
 APP_NAME = "Kingfisher"
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 WEBSITE = "https://github.com/geojoseph19/kingfisher"
 ISSUES_URL = WEBSITE + "/issues"
 CONTRIBUTING_URL = WEBSITE + "/blob/main/CONTRIBUTING.md"

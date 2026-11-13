@@ -6,6 +6,8 @@
 
 - Snap: pointing at a detected link, email address, phone number or code showed a grey
   box that was wider than the item and out of line with it
+- Snap: the application icon in the launcher was a low-colour copy with a flat background
+  and rough edges. It is now rendered from the original artwork, as are the README banners
 
 ## 1.0.5 - 2026-11-13
 

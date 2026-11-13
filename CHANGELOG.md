@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.5 - 2026-11-13
+
+### Fixed
+
+- Arabic, Urdu and other right-to-left text came out with the words of every line in
+  reverse order in the **As on Screen** format. Lines now keep their reading order, also
+  when they contain numbers or left-to-right phrases
+- Chinese and Japanese text had a space between every word or character; it is now joined
+  the way it is written
+- Images with a transparent background (logos, exported diagrams, signatures) opened from
+  a file or pasted from the clipboard were read as empty, because the transparent areas
+  turned black. They are now filled with a contrasting background
+- A damaged image file could fail without any message
+- Copy-only mode: after selecting an area and switching to **Screen**, the reading
+  animation ran over the earlier selection although the whole screen was being read. The
+  animation now always covers the area that is read
+- With two monitors, a selection left on the other screen is no longer shown while reading
+
 ## 1.0.4 - 2026-11-13
 
 ### Fixed

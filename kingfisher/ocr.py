@@ -14,6 +14,7 @@ import statistics
 import subprocess
 import threading
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -445,6 +446,52 @@ def _char_width(words):
     return max(statistics.median(samples), 1.0) if samples else 8.0
 
 
+def _is_rtl(words):
+    """Whether a row is written right to left (Arabic, Hebrew, Urdu …): most
+    of its words start with a right-to-left letter. Numbers have no direction."""
+    rtl = ltr = 0
+    for w in words:
+        for ch in w.text:
+            direction = unicodedata.bidirectional(ch)
+            if direction in ("R", "AL"):
+                rtl += 1
+                break
+            if direction == "L":
+                ltr += 1
+                break
+    return rtl > ltr
+
+
+def _unspaced(ch):
+    """Chinese and Japanese are written without spaces between words."""
+    code = ord(ch)
+    return (0x3040 <= code <= 0x30FF       # Hiragana, Katakana
+            or 0x3400 <= code <= 0x4DBF    # CJK extension A
+            or 0x4E00 <= code <= 0x9FFF    # CJK unified ideographs
+            or 0xF900 <= code <= 0xFAFF    # compatibility ideographs
+            or 0x3000 <= code <= 0x303F    # CJK punctuation
+            or 0xFF00 <= code <= 0xFF9F    # full-width forms, half-width Katakana
+            or 0x20000 <= code <= 0x2FA1F)
+
+
+def _glued(before, after):
+    """Whether two pieces of text belong together without a space. Tesseract
+    reports Chinese and Japanese in tokens of a character or two; joining
+    them with spaces would put a space between every token."""
+    return bool(before) and bool(after) and _unspaced(before[-1]) and _unspaced(after[0])
+
+
+def _space_between(a, b, row):
+    """The gap between two words that follow each other in reading order, or
+    0 when they are not neighbours on screen: in a right-to-left line, a
+    left-to-right phrase (a product name, a number with its unit) reads
+    forwards, so the next word in reading order can sit at its far end."""
+    lo, hi = (a.right, b.left) if b.left >= a.right else (b.right, a.left)
+    if hi <= lo or any(w is not a and w is not b and w.left < hi and w.right > lo for w in row):
+        return 0
+    return hi - lo
+
+
 def _visual_rows(words):
     """Group Tesseract's lines into rows by their position on screen.
 
@@ -465,15 +512,25 @@ def _visual_rows(words):
             row = rows[-1]
             if abs(center - row["center"]) < 0.5 * max(height, row["height"]):
                 row["words"].extend(line)
+                row["lines"].append(line)
                 row["top"] = min(row["top"], top)
                 row["bottom"] = max(row["bottom"], bottom)
                 row["n"] += 1
                 row["center"] += (center - row["center"]) / row["n"]
                 continue
         rows.append({"center": center, "top": top, "bottom": bottom, "height": height,
-                     "words": list(line), "n": 1})
+                     "words": list(line), "lines": [line], "n": 1})
     for row in rows:
-        row["words"].sort(key=lambda w: w.left)
+        row["rtl"] = _is_rtl(row["words"])
+        if row["rtl"]:
+            # Tesseract lists the words of a line in reading order, which for
+            # these scripts starts at the right. Sorting by position would
+            # reverse every sentence; only whole lines that share the row
+            # (columns) need placing, the rightmost first.
+            ordered = sorted(row["lines"], key=lambda line: -max(w.right for w in line))
+            row["words"] = [w for line in ordered for w in line]
+        else:
+            row["words"].sort(key=lambda w: w.left)
     return rows
 
 
@@ -484,15 +541,21 @@ def _build_lines(words):
         return ""
     char_w = _char_width(words)
     left_edge = min(w.left for w in words)
+    right_edge = max(w.right for w in words)
     out, prev = [], None
     for row in _visual_rows(words):
         if prev is not None and row["top"] - prev["bottom"] > 0.9 * max(row["height"], prev["height"]):
             out.append("")
         line = row["words"]
-        indent = round((line[0].left - left_edge) / char_w)
+        # A right-to-left line starts, and is indented, at the right.
+        start = right_edge - line[0].right if row["rtl"] else line[0].left - left_edge
+        indent = round(start / char_w)
         parts = [" " * max(0, min(indent, 60)) + line[0].text]
         for a, b in zip(line, line[1:], strict=False):
-            gap = (b.left - a.right) / char_w
+            gap = (_space_between(a, b, line) if row["rtl"] else b.left - a.right) / char_w
+            if gap < 2.5 and _glued(a.text, b.text):
+                parts.append(b.text)
+                continue
             spaces = round(gap) if gap >= 2.5 else 1
             parts.append(" " * max(1, min(spaces, 40)) + b.text)
         out.append("".join(parts).rstrip())
@@ -509,7 +572,9 @@ def _build_paragraphs(words):
         return ""
     paragraphs = []  # [text, block, par, bottom, height, left]
     for line in _group_lines(words):
-        text = " ".join(w.text for w in line)
+        text = line[0].text
+        for a, b in zip(line, line[1:], strict=False):
+            text += b.text if _glued(a.text, b.text) else f" {b.text}"
         block, par = line[0].block, line[0].par
         top = min(w.top for w in line)
         left = line[0].left
@@ -524,6 +589,8 @@ def _build_paragraphs(words):
                 last = prev[0]
                 if last.endswith("-") and len(last) > 1 and last[-2].isalpha() and text[:1].islower():
                     prev[0] = last[:-1] + text
+                elif _glued(last, text):
+                    prev[0] = last + text   # a wrapped Chinese or Japanese sentence
                 else:
                     prev[0] = f"{last} {text}"
                 prev[1], prev[2], prev[3], prev[4] = block, par, max(w.bottom for w in line), height

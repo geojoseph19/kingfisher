@@ -127,5 +127,30 @@ class AccessNeededTests(unittest.TestCase):
         window.toast.assert_called_once()
 
 
+class CaptureDelayTests(unittest.TestCase):
+    """How long a capture waits before the picture is taken."""
+
+    def wait_before_capture(self, visible_windows=(), **options):
+        app = mock.Mock(_capturing=False, selector=None, settings={"screen_access_explained": True})
+        app.get_windows.return_value = list(visible_windows)
+        with mock.patch.object(application.GLib, "timeout_add") as timeout_add:
+            application.KingfisherApplication.start_capture(app, "area", **options)
+        return timeout_add.call_args[0][0]
+
+    def test_menu_capture_waits_for_the_menu_to_close(self):
+        # GNOME Shell's menu fades out for 150 ms after the click is reported.
+        wait = self.wait_before_capture(step_aside=False, from_menu=True)
+        self.assertEqual(wait, application.MENU_CLOSE_DELAY_MS)
+        self.assertGreaterEqual(wait, 250)
+
+    def test_shortcut_capture_stays_immediate(self):
+        self.assertLessEqual(self.wait_before_capture(step_aside=False), 100)
+
+    def test_capture_from_the_window_waits_for_it_to_hide(self):
+        window = mock.Mock()
+        window.get_visible.return_value = True
+        self.assertEqual(self.wait_before_capture([window]), application.HIDE_DELAY_MS)
+
+
 if __name__ == "__main__":
     unittest.main()

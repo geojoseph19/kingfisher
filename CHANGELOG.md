@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.3 - 2026-11-13
+
+### Fixed
+
+- A capture started from the top-bar icon's menu could show the menu itself, half faded,
+  in the picture
+
 ## 1.0.2 - 2026-11-13
 
 ### Fixed

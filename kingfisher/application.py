@@ -23,6 +23,10 @@ from .clipboard import set_clipboard_text
 from .window import MainWindow
 
 HIDE_DELAY_MS = 350                    # let the compositor finish hiding our windows
+# GNOME Shell tells us about a click in the top-bar menu when the menu starts
+# to fade out, which takes 150 ms. A capture taken sooner freezes the
+# half-faded menu into the picture.
+MENU_CLOSE_DELAY_MS = 300
 PORTAL_DIALOG_DELAY_MS = 250           # let the portal's "Share" dialog close first
 RESIDENT_TIMEOUT_MS = 10 * 60 * 1000   # stay loaded after the last window closes
 
@@ -272,8 +276,8 @@ class KingfisherApplication(Adw.Application):
                 self._host_watch = tray.watch_host(self._on_tray_host)
             return
         self._tray = tray.TrayIcon(str(ICON_DIR / "tray" / "kingfisher-tray-mark.svg"), APP_NAME, [
-            ("Select Area…", lambda: self.start_capture("area", step_aside=False)),
-            ("Full Screen", lambda: self.start_capture("screen", step_aside=False)),
+            ("Select Area…", lambda: self.start_capture("area", step_aside=False, from_menu=True)),
+            ("Full Screen", lambda: self.start_capture("screen", step_aside=False, from_menu=True)),
             None,
             (f"Open {APP_NAME}", lambda: self.get_window().present()),
             ("Recent Results…", self.show_history),
@@ -333,7 +337,7 @@ class KingfisherApplication(Adw.Application):
             self._update_tray()
 
     # =============================================================== capture
-    def start_capture(self, mode, delay=0, step_aside=True, counted_down=0):
+    def start_capture(self, mode, delay=0, step_aside=True, counted_down=0, from_menu=False):
         """mode: "area" (interactive selection) or "screen" (whole screen).
 
         ``step_aside``: hide Kingfisher's windows first. Right when the capture
@@ -343,6 +347,9 @@ class KingfisherApplication(Adw.Application):
 
         ``counted_down``: the countdown that has just run for this capture,
         so that it can run again if screen access must be asked for first.
+
+        ``from_menu``: started from the top-bar icon's menu, which is still
+        closing: wait for it, or it ends up in the picture.
         """
         if self._capturing and self.selector is not None and not self.selector.alive():
             # The overlay was closed behind the selector's back: start over.
@@ -384,7 +391,8 @@ class KingfisherApplication(Adw.Application):
             capture_screen(on_result)
             return GLib.SOURCE_REMOVE
 
-        GLib.timeout_add(HIDE_DELAY_MS if was_visible else 60, grab, 1)
+        idle_wait = MENU_CLOSE_DELAY_MS if from_menu else 60
+        GLib.timeout_add(HIDE_DELAY_MS if was_visible else idle_wait, grab, 1)
 
     def _on_captured(self, image, error, mode, was_visible, counted_down=0):
         if error:

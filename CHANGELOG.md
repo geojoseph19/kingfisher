@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Snap: pointing at a detected link, email address, phone number or code showed a grey
+  box that was wider than the item and out of line with it
+
 ## 1.0.5 - 2026-11-13
 
 ### Fixed

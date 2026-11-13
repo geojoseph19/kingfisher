@@ -265,6 +265,16 @@ textview.result-text text {
 
 /* detected links, emails, phone numbers and codes */
 .detected-strip { padding: 10px 14px 0 14px; }
+/* Each chip sits in a list cell that is wider than the chip. Newer libadwaita
+   shades a hovered cell, which showed as a grey box out of line with the chip.
+   The chip's own buttons already respond to the pointer. */
+.detected-strip > flowboxchild,
+.detected-strip > flowboxchild:hover,
+.detected-strip > flowboxchild:active,
+.detected-strip > flowboxchild:selected {
+  background: none;
+  box-shadow: none;
+}
 .chip > button {
   min-height: 28px;
   padding: 0 8px;

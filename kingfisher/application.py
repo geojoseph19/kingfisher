@@ -47,6 +47,18 @@ def option_path(value):
     return value
 
 
+def read_codes_or_none(image, reader=code_reader):
+    """The QR codes and barcodes in ``image``; none if reading them fails.
+
+    Codes are an extra. A fault in reading them must never cost the user the
+    text, which is what the capture was for."""
+    try:
+        return reader.read_codes(image)
+    except Exception as err:
+        print(f"Reading codes failed: {err!r}", file=sys.stderr)
+        return []
+
+
 def unreadable_message(path, error, sandboxed=IS_SNAP):
     """What to say when an image file cannot be opened.
 
@@ -605,7 +617,7 @@ class KingfisherApplication(Adw.Application):
         def work():
             try:
                 token.check()
-                found = code_reader.read_codes(image) if read_codes else []
+                found = read_codes_or_none(image) if read_codes else []
                 token.check()
                 # Hide codes from OCR so their patterns aren't read as text.
                 result = self.engine.recognize(code_reader.mask_codes(image, found),

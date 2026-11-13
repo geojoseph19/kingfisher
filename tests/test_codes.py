@@ -4,6 +4,7 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image, ImageOps
 
@@ -52,6 +53,28 @@ class CodeTests(unittest.TestCase):
 
     def test_nothing_found(self):
         self.assertEqual(codes.read_codes(Image.new("RGB", (200, 100), "white")), [])
+
+    def test_captures_without_a_code_are_read_at_every_size(self):
+        # Small captures get a second, enlarged pass and dark ones an inverted
+        # pass. Each must work with the Pillow in use: the snap's 12.1 fails
+        # on nearest-neighbour resizing, which once broke every small capture.
+        for size in ((30, 20), (400, 300), (799, 799), (800, 600), (1920, 1200)):
+            for colour in ("white", "black", (40, 40, 60)):
+                with self.subTest(size=size, colour=colour):
+                    self.assertEqual(codes.read_codes(Image.new("RGB", size, colour)), [])
+
+    def test_enlarged_pass_doubles_pixels_exactly(self):
+        # Smoothing would blur the modules of a tiny code.
+        seen = []
+        noise = Image.effect_noise((64, 48), 80).convert("RGB")
+        with mock.patch.object(codes, "_decode", side_effect=lambda gray, scale: seen.append((gray, scale)) or []):
+            codes.read_codes(noise)
+        big = next(gray for gray, scale in seen if scale == 2)
+        gray = noise.convert("L")
+        self.assertEqual(big.size, (128, 96))
+        for x, y in ((0, 0), (17, 5), (63, 47)):
+            for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+                self.assertEqual(big.getpixel((2 * x + dx, 2 * y + dy)), gray.getpixel((x, y)))
 
 
 # Minimal EAN-13 renderer for tests (no barcode library needed).

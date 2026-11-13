@@ -111,7 +111,9 @@ def read_codes(image):
     gray = image.convert("L")
     codes = _decode(gray, 1)
     if not codes and max(gray.size) < UPSCALE_BELOW:
-        big = gray.resize((gray.width * 2, gray.height * 2), Image.NEAREST)
+        # BOX doubles every pixel exactly, as NEAREST would. NEAREST itself
+        # fails in the Pillow 12.1 the snap ships ("resize returned NULL").
+        big = gray.resize((gray.width * 2, gray.height * 2), Image.BOX)
         codes = _decode(big, 2)
     if not codes and _mostly_dark(gray):
         codes = _decode(ImageOps.invert(gray), 1)

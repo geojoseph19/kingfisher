@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.4 - 2026-11-13
+
+### Fixed
+
+- Snap: a selection smaller than 800 pixels failed with "Unexpected error: … 'resize' …
+  returned NULL" unless it contained a QR code or barcode. The search for small codes
+  used an operation that the snap's image library cannot perform
+- A fault while reading QR codes and barcodes no longer stops the text from being read
+
 ## 1.0.3 - 2026-11-13
 
 ### Fixed

@@ -127,6 +127,21 @@ class AccessNeededTests(unittest.TestCase):
         window.toast.assert_called_once()
 
 
+class CodeReadingTests(unittest.TestCase):
+    """Reading codes is an extra; it must never cost the user the text."""
+
+    def test_codes_are_passed_on(self):
+        reader = mock.Mock()
+        reader.read_codes.return_value = ["a code"]
+        self.assertEqual(application.read_codes_or_none("image", reader), ["a code"])
+
+    def test_a_failing_reader_means_no_codes(self):
+        reader = mock.Mock()
+        reader.read_codes.side_effect = SystemError("resize returned NULL without setting an exception")
+        with mock.patch.object(application.sys, "stderr"):
+            self.assertEqual(application.read_codes_or_none("image", reader), [])
+
+
 class CaptureDelayTests(unittest.TestCase):
     """How long a capture waits before the picture is taken."""
 

@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from gi.repository import GLib
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageStat
 
 from . import IS_SNAP
 
@@ -353,6 +353,28 @@ class TesseractEngine:
 
 
 # ---------------------------------------------------------------- preprocessing
+def to_rgb(image):
+    """An RGB copy of an image from a file or the clipboard.
+
+    Transparent areas have no colour of their own; a plain conversion makes
+    them black, so the usual case of dark text on a transparent background
+    (a logo, an exported diagram, a signature) turns into black on black and
+    nothing is read. They are filled with what contrasts with the picture:
+    white behind dark content, near-black behind light content."""
+    has_alpha = image.mode in ("RGBA", "LA", "PA") or "transparency" in image.info
+    if not has_alpha:
+        return image.convert("RGB")
+    rgba = image.convert("RGBA")
+    alpha = rgba.getchannel("A")
+    if alpha.getextrema()[0] == 255:
+        return rgba.convert("RGB")
+    drawn = ImageStat.Stat(rgba.convert("L"), mask=alpha)
+    dark_content = not drawn.count[0] or drawn.mean[0] < 128
+    flat = Image.new("RGB", rgba.size, (255, 255, 255) if dark_content else (24, 24, 24))
+    flat.paste(rgba, mask=alpha)
+    return flat
+
+
 def prepare_image(image, enhance=True):
     """Convert a screen capture into what Tesseract reads best:
     dark text on a light background, large glyphs and a quiet border."""

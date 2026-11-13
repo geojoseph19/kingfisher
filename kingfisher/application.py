@@ -16,7 +16,7 @@ from . import codes as code_reader
 from .capture import capture_screen, last_capture_was_silent, needs_access_note
 from .history import History, HistoryEntry
 from .languages import PackageKitInstaller
-from .ocr import CancelToken, OcrCancelled, OcrError, TesseractEngine
+from .ocr import CancelToken, OcrCancelled, OcrError, TesseractEngine, to_rgb
 from .overlay import RegionSelector
 from .settings import Settings
 from .clipboard import set_clipboard_text
@@ -57,6 +57,16 @@ def read_codes_or_none(image, reader=code_reader):
     except Exception as err:
         print(f"Reading codes failed: {err!r}", file=sys.stderr)
         return []
+
+
+def load_image(path):
+    """The image in a file, upright and in RGB."""
+    with Image.open(path) as img:
+        try:
+            upright = ImageOps.exif_transpose(img)
+        except Exception:   # damaged orientation data: read the picture as it is
+            upright = img
+        return to_rgb(upright)
 
 
 def unreadable_message(path, error, sandboxed=IS_SNAP):
@@ -682,10 +692,12 @@ class KingfisherApplication(Adw.Application):
     def ocr_file(self, path):
         win = self.get_window()
         win.present()
+        if not path:
+            win.toast("Only images on this computer can be opened", timeout=4)
+            return
         try:
-            with Image.open(path) as img:
-                image = ImageOps.exif_transpose(img).convert("RGB")
-        except (OSError, ValueError, Image.DecompressionBombError) as err:
+            image = load_image(path)
+        except Exception as err:   # a damaged file can fail in many ways; none may go unreported
             win.toast(unreadable_message(path, err), timeout=5)
             return
         self.run_ocr(image, "file")
@@ -718,7 +730,7 @@ class KingfisherApplication(Adw.Application):
                 win.toast("The clipboard does not contain an image")
                 return
             data = texture.save_to_png_bytes().get_data()
-            self.run_ocr(Image.open(io.BytesIO(data)).convert("RGB"), "clipboard")
+            self.run_ocr(to_rgb(Image.open(io.BytesIO(data))), "clipboard")
 
         win.get_clipboard().read_texture_async(None, on_texture)
 
